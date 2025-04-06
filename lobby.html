@@ -61,7 +61,6 @@
   <button onclick="launchGame()">Launch Game</button>
 
   <script>
-    // Display the room code from the URL
     const urlParams = new URLSearchParams(window.location.search);
     const room = urlParams.get("room") || "Unknown";
     document.getElementById("room-code").textContent = "Room: " + room;
@@ -74,7 +73,6 @@
         return;
       }
       alert(`Launching ${template} as ${name}...`);
-      // Redirect to table view or setup phase
     }
   </script>
 </body>
