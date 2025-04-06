@@ -1,0 +1,18 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Table Forge Lobby</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <script type="module">
+    const urlParams = new URLSearchParams(window.location.search);
+    const room = urlParams.get('room');
+    document.addEventListener("DOMContentLoaded", () => {
+      document.getElementById("roomDisplay").textContent = room;
+    });
+  </script>
+</head>
+<body>
+  <h1>Room Code: <span id="roomDisplay"></span></h1>
+  <p>Camera selection and UI coming soon!</p>
+</body>
+</html>
