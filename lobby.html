@@ -1,0 +1,13 @@
+<!DOCTYPE html>
+<html>
+<head><title>Table Forge Lobby</title></head>
+<body>
+  <h1>Table Forge Lobby</h1>
+  <p id="roomDisplay"></p>
+  <script>
+    const urlParams = new URLSearchParams(window.location.search);
+    const room = urlParams.get('room');
+    document.getElementById('roomDisplay').textContent = 'Room Code: ' + room;
+  </script>
+</body>
+</html>
