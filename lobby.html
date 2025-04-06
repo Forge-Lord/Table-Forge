@@ -1,1 +1,81 @@
-<!DOCTYPE html><html><head><title>Lobby</title></head><body><h1>Join or Create Room</h1></body></html>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Table Forge Lobby</title>
+  <style>
+    body {
+      background: #121212;
+      color: #fff;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      text-align: center;
+      padding: 40px 20px;
+    }
+    h1 {
+      font-size: 28px;
+      margin-bottom: 16px;
+    }
+    .code-box {
+      font-size: 24px;
+      background-color: #1e1e1e;
+      padding: 12px 24px;
+      margin-bottom: 30px;
+      display: inline-block;
+      border-radius: 8px;
+      border: 2px dashed #ff5722;
+    }
+    input, select, button {
+      font-size: 18px;
+      margin: 12px auto;
+      display: block;
+      padding: 12px;
+      width: 90%;
+      max-width: 400px;
+      border-radius: 6px;
+      border: none;
+    }
+    button {
+      background-color: #ff5722;
+      color: white;
+      font-weight: bold;
+      cursor: pointer;
+    }
+    button:hover {
+      background-color: #e64a19;
+    }
+  </style>
+</head>
+<body>
+  <h1>Welcome to the Forge Lobby</h1>
+  <div class="code-box" id="room-code">Room: ???</div>
+
+  <input type="text" id="player-name" placeholder="Enter your name" />
+  <select id="template-select">
+    <option value="">Choose a Template</option>
+    <option value="commander">Commander</option>
+    <option value="yugioh">Yu-Gi-Oh!</option>
+    <option value="digimon">Digimon</option>
+  </select>
+
+  <button onclick="launchGame()">Launch Game</button>
+
+  <script>
+    // Display the room code from the URL
+    const urlParams = new URLSearchParams(window.location.search);
+    const room = urlParams.get("room") || "Unknown";
+    document.getElementById("room-code").textContent = "Room: " + room;
+
+    function launchGame() {
+      const name = document.getElementById("player-name").value.trim();
+      const template = document.getElementById("template-select").value;
+      if (!name || !template) {
+        alert("Please enter your name and select a template.");
+        return;
+      }
+      alert(`Launching ${template} as ${name}...`);
+      // Redirect to table view or setup phase
+    }
+  </script>
+</body>
+</html>
