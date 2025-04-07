@@ -2,19 +2,20 @@
 <html>
 <head>
   <title>Table Forge</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
   <style>
     body {
-      background: #111;
-      color: white;
       font-family: sans-serif;
+      background: #111;
+      color: #fff;
       text-align: center;
-      padding: 2em;
+      padding: 3em;
     }
     button {
-      padding: 1em 2em;
-      margin: 1em;
       font-size: 1.2em;
+      padding: 1em 2em;
+      margin-top: 1em;
+      cursor: pointer;
     }
   </style>
 </head>
@@ -24,8 +25,8 @@
 
   <script>
     function createRoom() {
-      const roomCode = 'room-' + Math.random().toString(36).substring(2, 6);
-      window.location.href = `lobby.html?room=${roomCode}`;
+      const code = Math.random().toString(36).substring(2, 7);
+      window.location.href = `lobby.html?room=room-${code}`;
     }
   </script>
 </body>
