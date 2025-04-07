@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Table Forge Lobby</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <nav>
+    <a href="index.html">Home</a>
+    <a href="lobby.html">Lobby</a>
+  </nav>
+  <h1>Table Forge Lobby</h1>
+  <input id="displayName" placeholder="Enter your name" />
+  <select id="templateSelect">
+    <option value="Commander">Commander</option>
+    <option value="Yu-Gi-Oh">Yu-Gi-Oh</option>
+    <option value="Digimon">Digimon</option>
+  </select>
+  <button onclick="joinLobby()">Join</button>
+  <div id="players"></div>
+  <script type="module" src="script.js"></script>
+</body>
+</html>
