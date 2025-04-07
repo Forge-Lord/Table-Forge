@@ -1,1 +1,28 @@
-<html><body><h1>Table Forge</h1></body></html>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Table Forge</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <nav>
+    <a href="index.html">Home</a>
+    <a href="lobby.html">Lobby</a>
+    <a href="join.html">Join</a>
+  </nav>
+
+  <main style="text-align: center; padding: 2rem;">
+    <h1>Welcome to Table Forge</h1>
+    <button onclick="createRoom()">Create Room</button>
+  </main>
+
+  <script>
+    function createRoom() {
+      const roomCode = 'room-' + Math.random().toString(36).substring(2, 6);
+      window.location.href = `lobby.html?room=${roomCode}`;
+    }
+  </script>
+</body>
+</html>
