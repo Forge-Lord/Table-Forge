@@ -1,33 +1,22 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
+  <meta charset="UTF-8" />
   <title>Table Forge</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <style>
-    body {
-      font-family: sans-serif;
-      background: #111;
-      color: #fff;
-      text-align: center;
-      padding: 3em;
-    }
-    button {
-      font-size: 1.2em;
-      padding: 1em 2em;
-      margin-top: 1em;
-      cursor: pointer;
-    }
-  </style>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link rel="stylesheet" href="style.css" />
 </head>
 <body>
-  <h1>Welcome to Table Forge</h1>
-  <button onclick="createRoom()">Create Room</button>
+  <nav>
+    <a href="index.html">Home</a>
+    <a href="lobby.html">Lobby</a>
+  </nav>
 
-  <script>
-    function createRoom() {
-      const code = Math.random().toString(36).substring(2, 7);
-      window.location.href = `lobby.html?room=room-${code}`;
-    }
-  </script>
+  <main>
+    <h1>Welcome to Table Forge</h1>
+    <button onclick="createRoom()">Create Room</button>
+  </main>
+
+  <script type="module" src="script.js"></script>
 </body>
 </html>
