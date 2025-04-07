@@ -2,23 +2,29 @@
 <html>
 <head>
   <title>Table Forge</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <link rel="stylesheet" href="style.css" />
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <style>
+    body {
+      background: #111;
+      color: white;
+      font-family: sans-serif;
+      text-align: center;
+      padding: 2em;
+    }
+    button {
+      padding: 1em 2em;
+      margin: 1em;
+      font-size: 1.2em;
+    }
+  </style>
 </head>
 <body>
-  <div class="nav">
-    <a href="index.html">Home</a>
-    <a href="lobby.html">Lobby</a>
-  </div>
-
-  <div class="container">
-    <h1>Welcome to Table Forge</h1>
-    <button onclick="createRoom()">Create Room</button>
-  </div>
+  <h1>Welcome to Table Forge</h1>
+  <button onclick="createRoom()">Create Room</button>
 
   <script>
     function createRoom() {
-      const roomCode = Math.random().toString(36).substring(2, 8);
+      const roomCode = 'room-' + Math.random().toString(36).substring(2, 6);
       window.location.href = `lobby.html?room=${roomCode}`;
     }
   </script>
