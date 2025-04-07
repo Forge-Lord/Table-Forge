@@ -1,26 +1,24 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Table Forge</title>
-  <link rel="stylesheet" href="style.css">
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="stylesheet" href="style.css" />
 </head>
 <body>
-  <nav>
+  <div class="nav">
     <a href="index.html">Home</a>
     <a href="lobby.html">Lobby</a>
-    <a href="join.html">Join</a>
-  </nav>
+  </div>
 
-  <main style="text-align: center; padding: 2rem;">
+  <div class="container">
     <h1>Welcome to Table Forge</h1>
     <button onclick="createRoom()">Create Room</button>
-  </main>
+  </div>
 
   <script>
     function createRoom() {
-      const roomCode = 'room-' + Math.random().toString(36).substring(2, 6);
+      const roomCode = Math.random().toString(36).substring(2, 8);
       window.location.href = `lobby.html?room=${roomCode}`;
     }
   </script>
