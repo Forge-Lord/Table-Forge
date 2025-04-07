@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Table Forge Lobby</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <nav>
+    <a href="index.html">Home</a>
+    <a href="lobby.html">Lobby</a>
+  </nav>
+  <h1 id="roomHeader">Room: </h1>
+  <div id="hostControls">
+    <input id="displayName" placeholder="Enter your name" />
+    <select id="templateSelect">
+      <option value="Commander">Commander</option>
+    </select>
+    <textarea id="hostNotes" placeholder="Host notes here..."></textarea>
+    <button onclick="joinLobby()">Join</button>
+    <button onclick="startGame()" id="startGameBtn" style="display:none;">Start Game</button>
+  </div>
+  <div id="players"></div>
+  <script type="module" src="script.js"></script>
+</body>
+</html>
