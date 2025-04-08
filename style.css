@@ -1,0 +1,20 @@
+body {
+  font-family: sans-serif;
+  background-color: #111;
+  color: #fff;
+  padding: 2em;
+}
+nav {
+  background: #222;
+  padding: 1em;
+}
+nav a {
+  margin-right: 1em;
+  color: #ffa500;
+  text-decoration: none;
+}
+input, select, textarea, button {
+  margin: 0.5em;
+  padding: 0.5em;
+  font-size: 1em;
+}
