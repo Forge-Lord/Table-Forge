@@ -12,6 +12,14 @@
     <div id="playerPanels" style="display: flex; flex-wrap: wrap; gap: 1em;"></div>
   </div>
 
+  <button id="toggleChatBtn">💬 Open Chat</button>
+  <div id="chatPanel" style="display:none; position: fixed; bottom: 1em; right: 1em; background: #222; padding: 1em; border: 1px solid #444; width: 300px;">
+    <h4>Chat</h4>
+    <div id="chatLog" style="max-height: 200px; overflow-y: auto;"></div>
+    <input id="chatInput" placeholder="Type message..." />
+    <button onclick="sendChat()">Send</button>
+  </div>
+
   <script type="module" src="overlay.js"></script>
 </body>
 </html>
