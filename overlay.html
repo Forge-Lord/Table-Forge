@@ -9,7 +9,7 @@
 <body>
   <div id="overlay">
     <h2>Game Overlay</h2>
-    <div id="playerPanels" style="display: flex; flex-wrap: wrap; gap: 1em;"></div>
+    <div id="playerPanels" style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 1em;"></div>
   </div>
 
   <button id="toggleChatBtn">💬 Open Chat</button>
@@ -19,6 +19,8 @@
     <input id="chatInput" placeholder="Type message..." />
     <button onclick="sendChat()">Send</button>
   </div>
+
+  <audio id="clickSound" src="https://actions.google.com/sounds/v1/cartoon/wood_plank_flicks.ogg"></audio>
 
   <script type="module" src="overlay.js"></script>
 </body>
