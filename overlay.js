@@ -24,6 +24,7 @@ const displayName = localStorage.getItem("displayName") || "Unknown";
 
 const playersRef = ref(db, `rooms/${roomId}/players`);
 const chatRef = ref(db, `rooms/${roomId}/chat`);
+const clickSound = document.getElementById("clickSound");
 
 onValue(playersRef, (snapshot) => {
   const container = document.getElementById("playerPanels");
@@ -34,9 +35,18 @@ onValue(playersRef, (snapshot) => {
       container.innerHTML += `
         <div style="border:2px solid #ffa500; padding:1em; min-width:200px; background:#222">
           <h3>${player.name}</h3>
-          <p>Life: <input type="number" id="life-${key}" value="${player.life}" style="width:60px"/></p>
-          <p>Commander Dmg: <input type="number" id="cd-${key}" value="${player.commander || 0}" style="width:60px"/></p>
-          <p>Status: <input type="text" id="status-${key}" value="${player.status || ''}" style="width:100px"/></p>
+          <label>Life:
+            <input type="number" id="life-${key}" value="${player.life}" style="width:60px"/>
+          </label>
+          <br/>
+          <label>Commander Dmg:
+            <input type="number" id="cd-${key}" value="${player.commander || 0}" style="width:60px"/>
+          </label>
+          <br/>
+          <label>Status:
+            <input type="text" id="status-${key}" value="${player.status || ''}" style="width:100px"/>
+          </label>
+          <br/>
           <button onclick="savePlayer('${key}')">Save</button>
         </div>
       `;
@@ -54,14 +64,17 @@ window.savePlayer = (playerKey) => {
     commander: newCD,
     status: newStatus
   });
+
+  if (clickSound) clickSound.play();
 };
 
-// Chat
+// Chat panel toggle
 document.getElementById("toggleChatBtn").addEventListener("click", () => {
   const chat = document.getElementById("chatPanel");
   chat.style.display = chat.style.display === "none" ? "block" : "none";
 });
 
+// Chat updates
 onValue(chatRef, (snapshot) => {
   const log = document.getElementById("chatLog");
   log.innerHTML = "";
@@ -71,6 +84,7 @@ onValue(chatRef, (snapshot) => {
   });
 });
 
+// Send chat
 window.sendChat = () => {
   const input = document.getElementById("chatInput");
   if (input.value.trim()) {
@@ -79,5 +93,6 @@ window.sendChat = () => {
       text: input.value.trim()
     });
     input.value = "";
+    if (clickSound) clickSound.play();
   }
 };
