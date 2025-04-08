@@ -11,10 +11,17 @@
     <a href="index.html">Home</a>
     <a href="lobby.html">Lobby</a>
   </nav>
-  <main>
+
+  <main style="text-align: center; margin-top: 2rem;">
     <h1>Welcome to Table Forge</h1>
     <button id="createRoomBtn">Create Room</button>
   </main>
-  <script type="module" src="script.js"></script>
+
+  <script>
+    document.getElementById("createRoomBtn").addEventListener("click", () => {
+      const code = "room-" + Math.random().toString(36).substring(2, 6);
+      window.location.href = `lobby.html?room=${code}`;
+    });
+  </script>
 </body>
 </html>
