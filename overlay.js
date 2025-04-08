@@ -10,7 +10,7 @@ import {
 const firebaseConfig = {
   apiKey: "AIzaSyBzvVpMCdg3Y6i5vCGWarorcTmzBzjmPow",
   authDomain: "tableforge-app.firebaseapp.com",
-  databaseURL: "https://tableforge-app-default-rtdb.firebaseio.com",
+  databaseURL: "https://tableforge-app-default-rtdb.firebaseio.com", // ✅ FIXED
   projectId: "tableforge-app",
   storageBucket: "tableforge-app.appspot.com",
   messagingSenderId: "708497363618",
@@ -27,6 +27,7 @@ const chatRef = ref(db, `rooms/${roomId}/chat`);
 const clickSound = document.getElementById("clickSound");
 
 onValue(playersRef, (snapshot) => {
+  console.log("Fetched players:", snapshot.val()); // ✅ debug log
   const container = document.getElementById("playerPanels");
   container.innerHTML = "";
   const players = snapshot.val();
