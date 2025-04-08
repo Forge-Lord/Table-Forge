@@ -16,11 +16,13 @@ const db = getDatabase(app);
 
 const urlParams = new URLSearchParams(window.location.search);
 const roomId = urlParams.get("room");
-const name = localStorage.getItem("displayName") || prompt("Enter your name");
+document.getElementById("roomHeader").innerText = "Room: " + roomId;
 
-document.getElementById("roomHeader")?.innerText = "Room: " + roomId;
+const joinBtn = document.getElementById("joinBtn");
+const startBtn = document.getElementById("startButton");
 
-window.joinLobby = () => {
+joinBtn?.addEventListener("click", () => {
+  const name = document.getElementById("displayName").value || "Player";
   const template = document.getElementById("gameSelect").value;
   const notes = document.getElementById("hostNotes").value;
 
@@ -40,12 +42,13 @@ window.joinLobby = () => {
     template: template
   });
 
-  document.getElementById("startButton").style.display = "inline-block";
-};
+  localStorage.setItem("displayName", name);
+  startBtn.style.display = "inline-block";
+});
 
-window.startGame = () => {
+startBtn?.addEventListener("click", () => {
   window.location.href = `overlay.html?room=${roomId}`;
-};
+});
 
 const playersRef = ref(db, `rooms/${roomId}/players`);
 onValue(playersRef, (snapshot) => {
