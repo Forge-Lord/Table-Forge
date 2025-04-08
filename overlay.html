@@ -2,23 +2,21 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>Overlay</title>
+  <title>Table Forge Overlay</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
-  <div id="overlay">
-    <h2>Game Overlay</h2>
-    <div id="playerPanels" style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 1em;"></div>
-  </div>
+  <nav style="text-align:center; margin: 1em;">
+    <label>Overlay Template:
+      <select id="templateSelect">
+        <option value="commander">Commander</option>
+        <option value="yugioh">Yu-Gi-Oh!</option>
+      </select>
+    </label>
+  </nav>
 
-  <button id="toggleChatBtn">💬 Open Chat</button>
-  <div id="chatPanel" style="display:none; position: fixed; bottom: 1em; right: 1em; background: #222; padding: 1em; border: 1px solid #444; width: 300px;">
-    <h4>Chat</h4>
-    <div id="chatLog" style="max-height: 200px; overflow-y: auto;"></div>
-    <input id="chatInput" placeholder="Type message..." />
-    <button onclick="sendChat()">Send</button>
-  </div>
+  <div id="overlay"></div>
 
   <audio id="clickSound" src="https://actions.google.com/sounds/v1/cartoon/wood_plank_flicks.ogg"></audio>
 
