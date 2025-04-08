@@ -23,9 +23,16 @@ onValue(playersRef, (snapshot) => {
   if (players) {
     Object.entries(players).forEach(([_, player]) => {
       container.innerHTML += `
-        <div style="border:1px solid #aaa; margin:1em; padding:1em;">
-          <strong>${player.name}</strong><br>
-          Life: ${player.life}
+        <div style="
+          border: 2px solid #ffa500;
+          padding: 1em;
+          min-width: 150px;
+          text-align: center;
+          background: #222;
+        ">
+          <h3>${player.name}</h3>
+          <p>Life: ${player.life}</p>
+          <p>Status: ${player.ready ? "Ready" : "Waiting"}</p>
         </div>
       `;
     });
