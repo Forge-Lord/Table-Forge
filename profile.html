@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Forge Identity</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body style="text-align:center; padding:2em;">
+  <h1>Forge Identity</h1>
+  <p style="font-size: 1.2em;">Enter your unique name and password to enter the table.</p>
+
+  <form id="loginForm" style="margin-top:2em;">
+    <input id="displayName" placeholder="Display Name" required />
+    <br/>
+    <input id="password" type="password" placeholder="Password" required />
+    <br/>
+    <button type="submit">Confirm Identity</button>
+  </form>
+
+  <p id="loginStatus" style="margin-top: 1em; font-weight: bold;"></p>
+
+  <script type="module" src="auth.js"></script>
+</body>
+</html>
