@@ -2,21 +2,42 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>Table Forge Overlay</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Table Forge</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <link rel="stylesheet" href="style.css" />
 </head>
-<body>
-  <nav style="text-align:center; margin: 1em;">
-    <label>Overlay Template:
-      <select id="templateSelect">
-        <option value="commander">Commander</option>
-        <option value="yugioh">Yu-Gi-Oh!</option>
-      </select>
-    </label>
-  </nav>
+<body style="margin: 0; padding: 0; font-family: sans-serif;">
 
-  <div id="overlay"></div>
+  <!-- Profile Panel -->
+  <div style="position: absolute; top: 1em; right: 1em;">
+    <button id="profileBtn">🧑‍💻 Profile</button>
+    <div id="profilePopup" style="display:none; position:absolute; top:2em; right:0; background:#222; color:white; padding:1em; border:1px solid #444;">
+      <p><strong id="profileName">Name:</strong></p>
+      <p><span id="profileDiscord"></span></p>
+      <button onclick="logout()">Log out</button>
+    </div>
+  </div>
+
+  <!-- Overlay UI -->
+  <div id="overlayGrid" style="display: grid; grid-template-areas:
+    'top-left top-right'
+    'bottom-left bottom-right';
+    height: 100vh; width: 100vw; gap: 1em; padding: 1em;">
+    <div id="p1" style="grid-area: top-left;"></div>
+    <div id="p2" style="grid-area: top-right;"></div>
+    <div id="p3" style="grid-area: bottom-left;"></div>
+    <div id="p4" style="grid-area: bottom-right;"></div>
+  </div>
+
+  <!-- Chat -->
+  <div style="position:absolute; bottom:1em; left:1em;">
+    <button onclick="toggleChat()">💬 Chat</button>
+  </div>
+  <div id="chatPanel" style="display:none; position: absolute; bottom: 3em; left: 1em; background: #111; color: white; padding: 1em; width: 300px;">
+    <div id="chatLog" style="max-height: 200px; overflow-y: auto; font-size: 0.9em;"></div>
+    <input id="chatInput" placeholder="Message..." style="width: 70%;" />
+    <button onclick="sendChat()">Send</button>
+  </div>
 
   <audio id="clickSound" src="https://actions.google.com/sounds/v1/cartoon/wood_plank_flicks.ogg"></audio>
 
