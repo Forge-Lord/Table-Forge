@@ -1,73 +1,52 @@
-import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js";
-import {
-  getAuth,
-  createUserWithEmailAndPassword,
-  signInWithEmailAndPassword
-} from "https://www.gstatic.com/firebasejs/9.6.1/firebase-auth.js";
+import { initializeApp } from "firebase/app";
+import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword } from "firebase/auth";
 
-import {
-  getFirestore,
-  doc,
-  setDoc
-} from "https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js";
-
+// Firebase config (make sure this matches your project)
 const firebaseConfig = {
   apiKey: "AIzaSyBzvVpMCdg3Y6i5vCGWarorcTmzBzjmPow",
   authDomain: "tableforge-app.firebaseapp.com",
   projectId: "tableforge-app",
+  storageBucket: "tableforge-app.appspot.com",
+  messagingSenderId: "708497363618",
+  appId: "1:708497363618:web:39da060b48681944923dfb"
 };
 
+// Initialize Firebase
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
-const db = getFirestore(app);
 
+// Handle login form
 document.getElementById("loginForm").addEventListener("submit", async (e) => {
   e.preventDefault();
 
-  const name = document.getElementById("displayName").value.trim();
+  const username = document.getElementById("username").value.trim();
   const password = document.getElementById("password").value;
-  const status = document.getElementById("loginStatus");
 
-  if (!name || !password) {
-    status.textContent = "Both fields required.";
-    return;
-  }
-
-  if (name.toLowerCase().includes("admin") || name.match(/(damn|shit|fuck)/i)) {
-    status.textContent = "Name rejected by Forge. Choose an honorable identity.";
-    return;
-  }
-
-  const fakeEmail = `${name.toLowerCase()}@tableforge.app`;
+  const email = `${username.toLowerCase()}@tableforge.app`;
 
   try {
-    const result = await signInWithEmailAndPassword(auth, fakeEmail, password);
-    status.textContent = "Forge Identity Confirmed!";
-    saveSession(result.user.uid, name);
-  } catch (err) {
-    if (err.code === "auth/user-not-found") {
+    await signInWithEmailAndPassword(auth, email, password);
+    window.location.href = `/overlay.html?user=${encodeURIComponent(username)}`;
+  } catch (error) {
+    if (error.code === "auth/user-not-found") {
       try {
-        const result = await createUserWithEmailAndPassword(auth, fakeEmail, password);
-        await setDoc(doc(db, "users", result.user.uid), {
-          displayName: name,
-          createdAt: new Date().toISOString()
-        });
-        status.textContent = "Forge Identity Created!";
-        saveSession(result.user.uid, name);
+        await createUserWithEmailAndPassword(auth, email, password);
+        window.location.href = `/overlay.html?user=${encodeURIComponent(username)}`;
       } catch (createErr) {
-        status.textContent = "Creation failed. Choose a stronger password.";
+        showError("Error creating profile.");
+        console.error(createErr);
       }
+    } else if (error.code === "auth/wrong-password") {
+      showError("Incorrect password. Try again.");
     } else {
-      status.textContent = "Incorrect password. Try again.";
+      showError("Unexpected error. Check console.");
+      console.error(error);
     }
   }
 });
 
-function saveSession(uid, name) {
-  localStorage.setItem("uid", uid);
-  localStorage.setItem("displayName", name);
-  const last = sessionStorage.getItem("lastPage");
-  setTimeout(() => {
-    window.location.href = last || "index.html";
-  }, 1000);
+function showError(msg) {
+  const errorBox = document.getElementById("error");
+  errorBox.innerText = msg;
+  errorBox.style.display = "block";
 }
