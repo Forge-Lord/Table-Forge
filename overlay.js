@@ -6,6 +6,11 @@ import {
   update,
   push
 } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-database.js";
+import {
+  getAuth,
+  signOut,
+  onAuthStateChanged
+} from "https://www.gstatic.com/firebasejs/9.6.1/firebase-auth.js";
 
 const firebaseConfig = {
   apiKey: "AIzaSyBzvVpMCdg3Y6i5vCGWarorcTmzBzjmPow",
@@ -19,133 +24,125 @@ const firebaseConfig = {
 
 const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
+const auth = getAuth(app);
+
 const roomId = new URLSearchParams(window.location.search).get("room");
-const displayName = localStorage.getItem("displayName") || "Unknown";
 const clickSound = document.getElementById("clickSound");
 
-// DOM refs
-const overlay = document.getElementById("overlay");
-const templateSelect = document.getElementById("templateSelect");
+let currentUser = null;
+let displayName = null;
+let isHost = false;
 
-let template = "commander";
-templateSelect.addEventListener("change", () => {
-  template = templateSelect.value;
-  loadOverlay();
+// 🔓 Profile panel
+document.getElementById("profileBtn").addEventListener("click", () => {
+  const pop = document.getElementById("profilePopup");
+  pop.style.display = pop.style.display === "none" ? "block" : "none";
 });
 
-// ---------------------
-// COMMANDER OVERLAY UI
-// ---------------------
-const loadCommander = () => {
-  overlay.innerHTML = `
-    <h2>Commander Overlay</h2>
-    <p>(Placeholder - future expansion continues here)</p>
-  `;
-};
-
-// ---------------------
-// YU-GI-OH! OVERLAY UI
-// ---------------------
-let life = 8000;
-let lifeLog = [];
-
-const loadYGO = () => {
-  overlay.innerHTML = `
-    <div style="text-align:center;">
-      <h2>${displayName} - Life Points</h2>
-      <input id="lifeInput" type="number" value="${life}" style="font-size:2em; width:100px; text-align:center;" />
-      <div style="margin-top:1em;">
-        <button onclick="updateLife()">Update</button>
-        <button onclick="undoLife()">Undo</button>
-        <button onclick="resetLife()">Reset</button>
-      </div>
-      <div style="margin-top:2em;">
-        <h3>Life Log</h3>
-        <ul id="lifeLog" style="max-height:200px; overflow-y:auto;"></ul>
-      </div>
-      <div style="margin-top:2em;">
-        <h3>Card Lookup</h3>
-        <input id="cardInput" placeholder="Search Yu-Gi-Oh! card..." />
-        <button onclick="searchCard()">Search</button>
-        <div id="cardResult" style="margin-top:1em;"></div>
-      </div>
-    </div>
-  `;
-
-  renderLog();
-};
-
-window.updateLife = () => {
-  const newLife = parseInt(document.getElementById("lifeInput").value);
-  if (newLife !== life) {
-    lifeLog.push({ old: life, new: newLife, time: new Date().toLocaleTimeString() });
-    life = newLife;
-    renderLog();
-    if (clickSound) clickSound.play();
-  }
-};
-
-window.undoLife = () => {
-  const last = lifeLog.pop();
-  if (last) {
-    life = last.old;
-    document.getElementById("lifeInput").value = life;
-    renderLog();
-    if (clickSound) clickSound.play();
-  }
-};
-
-window.resetLife = () => {
-  lifeLog.push({ old: life, new: 8000, time: new Date().toLocaleTimeString() });
-  life = 8000;
-  document.getElementById("lifeInput").value = 8000;
-  renderLog();
-  if (clickSound) clickSound.play();
-};
-
-const renderLog = () => {
-  const logEl = document.getElementById("lifeLog");
-  if (!logEl) return;
-  logEl.innerHTML = "";
-  lifeLog.slice().reverse().forEach((entry) => {
-    logEl.innerHTML += `<li>${entry.time} - ${entry.old} → ${entry.new}</li>`;
+window.logout = () => {
+  signOut(auth).then(() => {
+    localStorage.clear();
+    window.location.href = "profile.html";
   });
 };
 
-// ---------------------
-// CARD LOOKUP
-// ---------------------
-window.searchCard = () => {
-  const query = document.getElementById("cardInput").value.trim();
-  const output = document.getElementById("cardResult");
-  output.innerHTML = "Searching...";
+// 🔁 Auth + overlay binding
+onAuthStateChanged(auth, (user) => {
+  if (user) {
+    currentUser = user;
+    displayName = localStorage.getItem("displayName") || "Unknown";
 
-  // YGOProDeck fuzzy search
-  fetch(`https://db.ygoprodeck.com/api/v7/cardinfo.php?fname=${encodeURIComponent(query)}`)
-    .then(res => res.json())
-    .then(data => {
-      const card = data.data?.[0];
-      if (card) {
-        output.innerHTML = `
-          <img src="${card.card_images[0].image_url}" style="width:100%;" />
-          <p><strong>${card.name}</strong></p>
-          <p style="font-size:0.9em;">${card.desc}</p>
-        `;
-        if (clickSound) clickSound.play();
-      } else {
-        output.innerHTML = "No card found.";
+    document.getElementById("profileName").innerText = `Name: ${displayName}`;
+    document.getElementById("profileDiscord").innerText = "";
+
+    bindRoom();
+  } else {
+    window.location.href = "profile.html";
+  }
+});
+
+// 🔗 ROOM BINDING
+function bindRoom() {
+  const playerRef = ref(db, `rooms/${roomId}/players/${displayName}`);
+  onValue(playerRef, (snap) => {
+    const pdata = snap.val();
+    if (!pdata) return;
+    if (pdata.isHost) isHost = true;
+
+    const seat = pdata.seat || "p1";
+    renderPanel(seat, pdata);
+  });
+
+  const playersRef = ref(db, `rooms/${roomId}/players`);
+  onValue(playersRef, (snap) => {
+    const all = snap.val();
+    Object.entries(all || {}).forEach(([name, pdata]) => {
+      if (name !== displayName) {
+        const seat = pdata.seat || "p2";
+        renderPanel(seat, pdata, false);
       }
-    })
-    .catch(err => {
-      output.innerHTML = "Search error.";
-      console.error(err);
     });
+  });
+}
+
+// 🎮 PANEL RENDERING
+function renderPanel(seat, player, editable = true) {
+  const panel = document.getElementById(seat);
+  if (!panel) return;
+
+  const override = isHost && !editable;
+  const isSelf = player.name === displayName;
+
+  panel.innerHTML = `
+    <div style="background:#222; padding:1em; border:2px solid #${isSelf ? "ffa500" : "555"};">
+      <h3>${player.name}</h3>
+      <p>Life: <input id="life-${seat}" value="${player.life || 40}" ${!isSelf && !override ? "readonly" : ""}></p>
+      <p>CMD: <input id="cmd-${seat}" value="${player.commander || 0}" ${!isSelf && !override ? "readonly" : ""}></p>
+      <p>Status: <input id="stat-${seat}" value="${player.status || ""}" ${!isSelf && !override ? "readonly" : ""}></p>
+      ${(isSelf || override) ? `<button onclick="save('${seat}', '${player.name}')">Save</button>` : ""}
+    </div>
+  `;
+}
+
+// 💾 SAVE PANEL
+window.save = (seat, name) => {
+  const life = parseInt(document.getElementById(`life-${seat}`).value);
+  const cmd = parseInt(document.getElementById(`cmd-${seat}`).value);
+  const stat = document.getElementById(`stat-${seat}`).value;
+
+  const refPath = `rooms/${roomId}/players/${name}`;
+  update(ref(db, refPath), {
+    life, commander: cmd, status: stat
+  });
+
+  if (clickSound) clickSound.play();
 };
 
-// ---------------------
-const loadOverlay = () => {
-  if (template === "commander") loadCommander();
-  if (template === "yugioh") loadYGO();
+// 💬 CHAT
+const chatRef = ref(db, `rooms/${roomId}/chat`);
+window.sendChat = () => {
+  const input = document.getElementById("chatInput");
+  const msg = input.value.trim();
+  if (!msg) return;
+  push(chatRef, {
+    name: displayName,
+    text: msg,
+    time: new Date().toLocaleTimeString()
+  });
+  input.value = "";
+  if (clickSound) clickSound.play();
 };
 
-loadOverlay();
+function toggleChat() {
+  const panel = document.getElementById("chatPanel");
+  panel.style.display = panel.style.display === "none" ? "block" : "none";
+}
+
+onValue(chatRef, (snap) => {
+  const log = document.getElementById("chatLog");
+  log.innerHTML = "";
+  snap.forEach((m) => {
+    const { name, text } = m.val();
+    log.innerHTML += `<p><strong>${name}:</strong> ${text}</p>`;
+  });
+});
