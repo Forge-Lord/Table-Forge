@@ -12,6 +12,7 @@ import {
   onAuthStateChanged
 } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-auth.js";
 
+// 🔧 Firebase Config
 const firebaseConfig = {
   apiKey: "AIzaSyBzvVpMCdg3Y6i5vCGWarorcTmzBzjmPow",
   authDomain: "tableforge-app.firebaseapp.com",
@@ -25,7 +26,6 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
 const auth = getAuth(app);
-
 const roomId = new URLSearchParams(window.location.search).get("room");
 const clickSound = document.getElementById("clickSound");
 
@@ -33,7 +33,7 @@ let currentUser = null;
 let displayName = null;
 let isHost = false;
 
-// 🔓 Profile panel
+// 🧑‍💻 PROFILE BUTTON
 document.getElementById("profileBtn").addEventListener("click", () => {
   const pop = document.getElementById("profilePopup");
   pop.style.display = pop.style.display === "none" ? "block" : "none";
@@ -46,23 +46,20 @@ window.logout = () => {
   });
 };
 
-// 🔁 Auth + overlay binding
+// 🔐 AUTH + BIND
 onAuthStateChanged(auth, (user) => {
   if (user) {
     currentUser = user;
     displayName = localStorage.getItem("displayName") || "Unknown";
-
     document.getElementById("profileName").innerText = `Name: ${displayName}`;
-    document.getElementById("profileDiscord").innerText = "";
-
-    bindRoom();
+    bindOverlay();
   } else {
     window.location.href = "profile.html";
   }
 });
 
-// 🔗 ROOM BINDING
-function bindRoom() {
+// 🔗 ROOM BINDING + PANEL LOGIC
+function bindOverlay() {
   const playerRef = ref(db, `rooms/${roomId}/players/${displayName}`);
   onValue(playerRef, (snap) => {
     const pdata = snap.val();
@@ -70,13 +67,13 @@ function bindRoom() {
     if (pdata.isHost) isHost = true;
 
     const seat = pdata.seat || "p1";
-    renderPanel(seat, pdata);
+    renderPanel(seat, pdata, true);
   });
 
   const playersRef = ref(db, `rooms/${roomId}/players`);
   onValue(playersRef, (snap) => {
-    const all = snap.val();
-    Object.entries(all || {}).forEach(([name, pdata]) => {
+    const players = snap.val();
+    Object.entries(players || {}).forEach(([name, pdata]) => {
       if (name !== displayName) {
         const seat = pdata.seat || "p2";
         renderPanel(seat, pdata, false);
@@ -85,21 +82,21 @@ function bindRoom() {
   });
 }
 
-// 🎮 PANEL RENDERING
-function renderPanel(seat, player, editable = true) {
-  const panel = document.getElementById(seat);
-  if (!panel) return;
+// 🧱 PANEL RENDERING
+function renderPanel(seat, player, isSelf) {
+  const target = document.getElementById(seat);
+  if (!target) return;
 
-  const override = isHost && !editable;
-  const isSelf = player.name === displayName;
+  const editable = isSelf || isHost;
+  const borderColor = isSelf ? "#ffa500" : isHost ? "#00f5ff" : "#555";
 
-  panel.innerHTML = `
-    <div style="background:#222; padding:1em; border:2px solid #${isSelf ? "ffa500" : "555"};">
+  target.innerHTML = `
+    <div style="background:#222; padding:1em; border:2px solid ${borderColor}; color:white;">
       <h3>${player.name}</h3>
-      <p>Life: <input id="life-${seat}" value="${player.life || 40}" ${!isSelf && !override ? "readonly" : ""}></p>
-      <p>CMD: <input id="cmd-${seat}" value="${player.commander || 0}" ${!isSelf && !override ? "readonly" : ""}></p>
-      <p>Status: <input id="stat-${seat}" value="${player.status || ""}" ${!isSelf && !override ? "readonly" : ""}></p>
-      ${(isSelf || override) ? `<button onclick="save('${seat}', '${player.name}')">Save</button>` : ""}
+      <p>Life: <input id="life-${seat}" value="${player.life || 40}" ${editable ? "" : "readonly"} /></p>
+      <p>CMD: <input id="cmd-${seat}" value="${player.commander || 0}" ${editable ? "" : "readonly"} /></p>
+      <p>Status: <input id="stat-${seat}" value="${player.status || ""}" ${editable ? "" : "readonly"} /></p>
+      ${editable ? `<button onclick="save('${seat}', '${player.name}')">Save</button>` : ""}
     </div>
   `;
 }
@@ -110,16 +107,16 @@ window.save = (seat, name) => {
   const cmd = parseInt(document.getElementById(`cmd-${seat}`).value);
   const stat = document.getElementById(`stat-${seat}`).value;
 
-  const refPath = `rooms/${roomId}/players/${name}`;
-  update(ref(db, refPath), {
+  update(ref(db, `rooms/${roomId}/players/${name}`), {
     life, commander: cmd, status: stat
   });
 
   if (clickSound) clickSound.play();
 };
 
-// 💬 CHAT
+// 💬 CHAT PANEL
 const chatRef = ref(db, `rooms/${roomId}/chat`);
+
 window.sendChat = () => {
   const input = document.getElementById("chatInput");
   const msg = input.value.trim();
@@ -133,10 +130,10 @@ window.sendChat = () => {
   if (clickSound) clickSound.play();
 };
 
-function toggleChat() {
+window.toggleChat = () => {
   const panel = document.getElementById("chatPanel");
   panel.style.display = panel.style.display === "none" ? "block" : "none";
-}
+};
 
 onValue(chatRef, (snap) => {
   const log = document.getElementById("chatLog");
