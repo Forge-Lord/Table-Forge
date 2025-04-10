@@ -1,52 +1,84 @@
-import { initializeApp } from "firebase/app";
-import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword } from "firebase/auth";
+import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js";
+import {
+  getAuth,
+  signInWithEmailAndPassword,
+  createUserWithEmailAndPassword
+} from "https://www.gstatic.com/firebasejs/9.6.1/firebase-auth.js";
+import {
+  getFirestore,
+  doc,
+  setDoc,
+  getDoc
+} from "https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js";
 
-// Firebase config (make sure this matches your project)
 const firebaseConfig = {
   apiKey: "AIzaSyBzvVpMCdg3Y6i5vCGWarorcTmzBzjmPow",
   authDomain: "tableforge-app.firebaseapp.com",
-  projectId: "tableforge-app",
-  storageBucket: "tableforge-app.appspot.com",
-  messagingSenderId: "708497363618",
-  appId: "1:708497363618:web:39da060b48681944923dfb"
+  projectId: "tableforge-app"
 };
 
-// Initialize Firebase
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
+const db = getFirestore(app);
 
-// Handle login form
 document.getElementById("loginForm").addEventListener("submit", async (e) => {
   e.preventDefault();
 
-  const username = document.getElementById("username").value.trim();
+  const name = document.getElementById("displayName").value.trim();
   const password = document.getElementById("password").value;
+  const status = document.getElementById("loginStatus");
 
-  const email = `${username.toLowerCase()}@tableforge.app`;
+  if (!name || !password) {
+    status.textContent = "Name and password required.";
+    return;
+  }
+
+  if (name.length < 3 || password.length < 6) {
+    status.textContent = "Name must be 3+ chars, password 6+.";
+    return;
+  }
+
+  if (name.toLowerCase().match(/(admin|fuck|shit|damn)/)) {
+    status.textContent = "Name rejected by the Forge.";
+    return;
+  }
+
+  const fakeEmail = `${name.toLowerCase()}@tableforge.app`;
 
   try {
-    await signInWithEmailAndPassword(auth, email, password);
-    window.location.href = `/overlay.html?user=${encodeURIComponent(username)}`;
-  } catch (error) {
-    if (error.code === "auth/user-not-found") {
+    // Try login first
+    await signInWithEmailAndPassword(auth, fakeEmail, password);
+    localStorage.setItem("displayName", name);
+    redirectAfterLogin();
+  } catch (err) {
+    if (err.code === "auth/user-not-found") {
+      // Create new account
       try {
-        await createUserWithEmailAndPassword(auth, email, password);
-        window.location.href = `/overlay.html?user=${encodeURIComponent(username)}`;
+        const result = await createUserWithEmailAndPassword(auth, fakeEmail, password);
+        await setDoc(doc(db, "users", name), {
+          displayName: name,
+          uid: result.user.uid,
+          createdAt: new Date().toISOString()
+        });
+        localStorage.setItem("displayName", name);
+        redirectAfterLogin();
       } catch (createErr) {
-        showError("Error creating profile.");
+        status.textContent = "Creation failed. Try another name.";
         console.error(createErr);
       }
-    } else if (error.code === "auth/wrong-password") {
-      showError("Incorrect password. Try again.");
+    } else if (err.code === "auth/wrong-password") {
+      status.textContent = "Incorrect password.";
     } else {
-      showError("Unexpected error. Check console.");
-      console.error(error);
+      status.textContent = "Login failed.";
+      console.error(err);
     }
   }
 });
 
-function showError(msg) {
-  const errorBox = document.getElementById("error");
-  errorBox.innerText = msg;
-  errorBox.style.display = "block";
+function redirectAfterLogin() {
+  document.getElementById("loginStatus").textContent = "Forge Identity Confirmed!";
+  const last = sessionStorage.getItem("lastPage");
+  setTimeout(() => {
+    window.location.href = last || "index.html";
+  }, 1000);
 }
