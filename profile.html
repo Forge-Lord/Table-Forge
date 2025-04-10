@@ -30,11 +30,10 @@
 
   <input type="text" id="displayName" placeholder="Display Name"><br>
   <input type="password" id="password" placeholder="Password"><br>
-  <button onclick="login()">Confirm Identity</button>
+  <button onclick="loginOrSignup()">Confirm Identity</button>
   <p id="message"></p>
 
   <script>
-    // Firebase config (your actual project info)
     const firebaseConfig = {
       apiKey: "AIzaSyBzvVpMCdg3Y6i5vCGWarorcTmzBzjmPow",
       authDomain: "tableforge-app.firebaseapp.com",
@@ -44,20 +43,35 @@
     firebase.initializeApp(firebaseConfig);
     const auth = firebase.auth();
 
-    function login() {
-      const displayName = document.getElementById("displayName").value;
+    function loginOrSignup() {
+      const displayName = document.getElementById("displayName").value.trim();
       const password = document.getElementById("password").value;
-      const email = `${displayName}@tableforge.app`; // Forge-style email trick
+      const email = `${displayName}@tableforge.app`;
+      const message = document.getElementById("message");
 
       auth.signInWithEmailAndPassword(email, password)
-        .then((userCredential) => {
-          document.getElementById("message").textContent = "Login successful!";
+        .then(() => {
+          message.textContent = "Welcome back!";
           setTimeout(() => {
-            window.location.href = "/"; // send back to main page
+            window.location.href = "/"; // Go back to main site
           }, 1000);
         })
         .catch((error) => {
-          document.getElementById("message").textContent = `Login failed: ${error.message}`;
+          if (error.code === "auth/user-not-found") {
+            // Try to create the user
+            auth.createUserWithEmailAndPassword(email, password)
+              .then(() => {
+                message.textContent = "Forge Identity created! Redirecting...";
+                setTimeout(() => {
+                  window.location.href = "/";
+                }, 1000);
+              })
+              .catch((signupError) => {
+                message.textContent = `Signup failed: ${signupError.message}`;
+              });
+          } else {
+            message.textContent = `Login failed: ${error.message}`;
+          }
         });
     }
   </script>
