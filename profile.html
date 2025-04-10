@@ -1,79 +1,49 @@
-<!DOCTYPE html>
-<html>
-<head>
-  <title>Forge Identity</title>
-  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth.js"></script>
-  <style>
-    body {
-      background-color: #111;
-      color: white;
-      font-family: sans-serif;
-      text-align: center;
-      margin-top: 100px;
-    }
+<script>
+  const firebaseConfig = {
+    apiKey: "AIzaSyBzvVpMCdg3Y6i5vCGWarorcTmzBzjmPow",
+    authDomain: "tableforge-app.firebaseapp.com",
+    projectId: "tableforge-app",
+  };
 
-    input, button {
-      padding: 10px;
-      margin: 10px;
-    }
+  firebase.initializeApp(firebaseConfig);
+  const auth = firebase.auth();
 
-    #message {
-      margin-top: 20px;
-      color: #f66;
-    }
-  </style>
-</head>
-<body>
-  <h1>Forge Identity</h1>
-  <p>Enter your unique name and password to enter the table.</p>
+  function loginOrSignup() {
+    const displayName = document.getElementById("displayName").value.trim();
+    const password = document.getElementById("password").value;
+    const email = `${displayName}@tableforge.app`;
+    const message = document.getElementById("message");
 
-  <input type="text" id="displayName" placeholder="Display Name"><br>
-  <input type="password" id="password" placeholder="Password"><br>
-  <button onclick="loginOrSignup()">Confirm Identity</button>
-  <p id="message"></p>
+    console.log("🔍 Attempting login with:", email);
 
-  <script>
-    const firebaseConfig = {
-      apiKey: "AIzaSyBzvVpMCdg3Y6i5vCGWarorcTmzBzjmPow",
-      authDomain: "tableforge-app.firebaseapp.com",
-      projectId: "tableforge-app",
-    };
+    auth.signInWithEmailAndPassword(email, password)
+      .then(() => {
+        console.log("✅ Login successful");
+        message.textContent = "Welcome back!";
+        setTimeout(() => {
+          window.location.href = "/";
+        }, 1000);
+      })
+      .catch((error) => {
+        console.warn("⚠️ Login failed:", error.code);
 
-    firebase.initializeApp(firebaseConfig);
-    const auth = firebase.auth();
-
-    function loginOrSignup() {
-      const displayName = document.getElementById("displayName").value.trim();
-      const password = document.getElementById("password").value;
-      const email = `${displayName}@tableforge.app`;
-      const message = document.getElementById("message");
-
-      auth.signInWithEmailAndPassword(email, password)
-        .then(() => {
-          message.textContent = "Welcome back!";
-          setTimeout(() => {
-            window.location.href = "/"; // Go back to main site
-          }, 1000);
-        })
-        .catch((error) => {
-          if (error.code === "auth/user-not-found") {
-            // Try to create the user
-            auth.createUserWithEmailAndPassword(email, password)
-              .then(() => {
-                message.textContent = "Forge Identity created! Redirecting...";
-                setTimeout(() => {
-                  window.location.href = "/";
-                }, 1000);
-              })
-              .catch((signupError) => {
-                message.textContent = `Signup failed: ${signupError.message}`;
-              });
-          } else {
-            message.textContent = `Login failed: ${error.message}`;
-          }
-        });
-    }
-  </script>
-</body>
-</html>
+        if (error.code === "auth/user-not-found") {
+          console.log("✨ Trying to create new user...");
+          auth.createUserWithEmailAndPassword(email, password)
+            .then(() => {
+              console.log("✅ New user created!");
+              message.textContent = "Forge Identity created! Redirecting...";
+              setTimeout(() => {
+                window.location.href = "/";
+              }, 1000);
+            })
+            .catch((signupError) => {
+              console.error("🔥 Signup failed:", signupError);
+              message.textContent = `Signup failed: ${signupError.message}`;
+            });
+        } else {
+          message.textContent = `Login failed: ${error.message}`;
+        }
+      });
+  }
+</script>
