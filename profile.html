@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Forge Identity</title>
   <style>
     body {
@@ -12,13 +12,9 @@
       text-align: center;
       margin-top: 100px;
     }
-    input {
+    input, button {
       margin: 10px;
-      padding: 8px;
-      font-size: 16px;
-    }
-    button {
-      padding: 10px 20px;
+      padding: 10px;
       font-size: 16px;
     }
     #message {
@@ -32,11 +28,11 @@
 <body>
   <h1>Forge Identity</h1>
   <p>Enter your unique name and password to enter the table.</p>
-  <input type="text" id="displayName" placeholder="Display Name" />
-  <br />
-  <input type="password" id="password" placeholder="Password" />
-  <br />
+
+  <input type="text" id="displayName" placeholder="Display Name"/><br/>
+  <input type="password" id="password" placeholder="Password"/><br/>
   <button onclick="confirmIdentity()">Confirm Identity</button>
+  <button onclick="createAccount()">Create New Account</button>
   <div id="message"></div>
 
   <script>
@@ -52,37 +48,44 @@
     firebase.initializeApp(firebaseConfig);
     const auth = firebase.auth();
 
-    function confirmIdentity() {
-      const displayName = document.getElementById('displayName').value.trim();
-      const password = document.getElementById('password').value;
-      const messageDiv = document.getElementById('message');
+    function getCreds() {
+      const displayName = document.getElementById("displayName").value.trim();
+      const password = document.getElementById("password").value;
       const email = `${displayName}@forge.local`;
+      return { displayName, password, email };
+    }
 
-      messageDiv.textContent = '';
+    function confirmIdentity() {
+      const { displayName, password, email } = getCreds();
+      const messageDiv = document.getElementById("message");
+      messageDiv.style.color = "#f55";
+      messageDiv.textContent = "";
 
       auth.signInWithEmailAndPassword(email, password)
-        .then((userCredential) => {
+        .then(() => {
           localStorage.setItem("displayName", displayName);
           window.location.href = "/lobby.html";
         })
         .catch((error) => {
-          if (error.code === 'auth/user-not-found') {
-            // Try creating user
-            auth.createUserWithEmailAndPassword(email, password)
-              .then((userCredential) => {
-                localStorage.setItem("displayName", displayName);
-                messageDiv.style.color = "#0f0";
-                messageDiv.textContent = "✨ Account created! Redirecting...";
-                setTimeout(() => window.location.href = "/lobby.html", 1000);
-              })
-              .catch((createErr) => {
-                messageDiv.style.color = "#f55";
-                messageDiv.textContent = "Signup failed: " + createErr.message;
-              });
-          } else {
-            messageDiv.style.color = "#f55";
-            messageDiv.textContent = "Login failed: " + error.message;
-          }
+          messageDiv.textContent = "Login failed: " + error.message;
+        });
+    }
+
+    function createAccount() {
+      const { displayName, password, email } = getCreds();
+      const messageDiv = document.getElementById("message");
+      messageDiv.style.color = "#f55";
+      messageDiv.textContent = "";
+
+      auth.createUserWithEmailAndPassword(email, password)
+        .then(() => {
+          localStorage.setItem("displayName", displayName);
+          messageDiv.style.color = "#0f0";
+          messageDiv.textContent = "✨ Account created! Redirecting...";
+          setTimeout(() => window.location.href = "/lobby.html", 1000);
+        })
+        .catch((error) => {
+          messageDiv.textContent = "Signup failed: " + error.message;
         });
     }
   </script>
