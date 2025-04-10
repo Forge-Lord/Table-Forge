@@ -1,65 +1,68 @@
-import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js";
-import { getDatabase, ref, set, onValue, update } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-database.js";
+import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-app.js";
+import {
+  getDatabase,
+  ref,
+  set,
+  onValue
+} from "https://www.gstatic.com/firebasejs/9.22.2/firebase-database.js";
 
 const firebaseConfig = {
   apiKey: "AIzaSyBzvVpMCdg3Y6i5vCGWarorcTmzBzjmPow",
   authDomain: "tableforge-app.firebaseapp.com",
-  databaseURL: "https://tableforge-app-default-rtdb.firebaseio.com",
   projectId: "tableforge-app",
-  storageBucket: "tableforge-app.appspot.com",
-  messagingSenderId: "708497363618",
-  appId: "1:708497363618:web:39da060b48681944923dfb"
+  databaseURL: "https://tableforge-app-default-rtdb.firebaseio.com"
 };
 
 const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
 
 const urlParams = new URLSearchParams(window.location.search);
-const roomId = urlParams.get("room");
-document.getElementById("roomHeader").innerText = "Room: " + roomId;
+let roomId = urlParams.get("room");
 
-const joinBtn = document.getElementById("joinBtn");
-const startBtn = document.getElementById("startButton");
+if (!roomId) {
+  roomId = `room-${Math.random().toString(36).substring(2, 7)}`;
+  window.history.replaceState({}, "", `?room=${roomId}`);
+}
 
-joinBtn?.addEventListener("click", () => {
-  const name = document.getElementById("displayName").value || "Player";
-  const template = document.getElementById("gameSelect").value;
-  const notes = document.getElementById("hostNotes").value;
+document.getElementById("roomCode").textContent = `Room: ${roomId}`;
 
-  const playerRef = ref(db, `rooms/${roomId}/players/${name}`);
-  const roomRef = ref(db, `rooms/${roomId}/info`);
+const displayName = localStorage.getItem("displayName") || `Guest${Math.floor(Math.random() * 1000)}`;
+const playerRef = ref(db, `rooms/${roomId}/players/${displayName}`);
 
-  set(playerRef, {
-    name: name,
-    template: template,
-    ready: false,
-    life: 40
-  });
-
-  update(roomRef, {
-    host: name,
-    notes: notes,
-    template: template
-  });
-
-  localStorage.setItem("displayName", name);
-  startBtn.style.display = "inline-block";
+set(playerRef, {
+  name: displayName,
+  isHost: true,
+  seat: "p1",
+  life: 40,
+  status: "",
+  commander: 0
 });
 
-startBtn?.addEventListener("click", () => {
-  window.location.href = `overlay.html?room=${roomId}`;
-});
-
+const playersDiv = document.getElementById("players");
 const playersRef = ref(db, `rooms/${roomId}/players`);
 onValue(playersRef, (snapshot) => {
-  const container = document.getElementById("players");
-  if (container) {
-    container.innerHTML = "<h3>Players</h3>";
-    const players = snapshot.val();
-    if (players) {
-      Object.entries(players).forEach(([_, player]) => {
-        container.innerHTML += `<p>${player.name} - Life: ${player.life}</p>`;
-      });
-    }
+  playersDiv.innerHTML = "<h2>Players in this room:</h2>";
+  const data = snapshot.val();
+  if (data) {
+    Object.values(data).forEach(player => {
+      const p = document.createElement("p");
+      p.textContent = player.name;
+      playersDiv.appendChild(p);
+    });
+  }
+
+  if (data && Object.keys(data).length >= 1 && displayName in data && data[displayName].isHost) {
+    document.getElementById("startGame").style.display = "inline-block";
   }
 });
+
+window.startGame = () => {
+  window.location.href = `overlay.html?room=${roomId}`;
+};
+
+window.joinRoomByCode = () => {
+  const code = document.getElementById("roomCodeInput").value.trim();
+  if (code) {
+    window.location.href = `lobby.html?room=${code}`;
+  }
+};
