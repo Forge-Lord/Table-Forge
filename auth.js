@@ -21,9 +21,9 @@ const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
 
+// FORM SUBMIT HANDLER
 document.getElementById("loginForm").addEventListener("submit", async (e) => {
   e.preventDefault();
-
   const name = document.getElementById("displayName").value.trim();
   const password = document.getElementById("password").value;
   const status = document.getElementById("loginStatus");
@@ -34,25 +34,24 @@ document.getElementById("loginForm").addEventListener("submit", async (e) => {
   }
 
   if (name.length < 3 || password.length < 6) {
-    status.textContent = "Name must be 3+ chars, password 6+.";
+    status.textContent = "Name must be 3+ characters, password 6+.";
     return;
   }
 
-  if (name.toLowerCase().match(/(admin|fuck|shit|damn)/)) {
-    status.textContent = "Name rejected by the Forge.";
+  if (name.toLowerCase().match(/(admin|fuck|shit|damn|ass)/)) {
+    status.textContent = "That name is not worthy of the Forge.";
     return;
   }
 
   const fakeEmail = `${name.toLowerCase()}@tableforge.app`;
 
   try {
-    // Try login first
     await signInWithEmailAndPassword(auth, fakeEmail, password);
+    status.textContent = "Welcome back, Forge Lord.";
     localStorage.setItem("displayName", name);
     redirectAfterLogin();
   } catch (err) {
     if (err.code === "auth/user-not-found") {
-      // Create new account
       try {
         const result = await createUserWithEmailAndPassword(auth, fakeEmail, password);
         await setDoc(doc(db, "users", name), {
@@ -60,23 +59,23 @@ document.getElementById("loginForm").addEventListener("submit", async (e) => {
           uid: result.user.uid,
           createdAt: new Date().toISOString()
         });
+        status.textContent = "Forge Identity Created!";
         localStorage.setItem("displayName", name);
         redirectAfterLogin();
       } catch (createErr) {
-        status.textContent = "Creation failed. Try another name.";
-        console.error(createErr);
+        console.error("Creation Error:", createErr);
+        status.textContent = "Name already exists or invalid. Try another.";
       }
     } else if (err.code === "auth/wrong-password") {
       status.textContent = "Incorrect password.";
     } else {
-      status.textContent = "Login failed.";
-      console.error(err);
+      console.error("Login Error:", err);
+      status.textContent = "Login failed. Try again.";
     }
   }
 });
 
 function redirectAfterLogin() {
-  document.getElementById("loginStatus").textContent = "Forge Identity Confirmed!";
   const last = sessionStorage.getItem("lastPage");
   setTimeout(() => {
     window.location.href = last || "index.html";
