@@ -1,12 +1,15 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-  <meta charset="UTF-8">
   <title>Forge Identity</title>
-  <script type="module" src="/auth.js"></script>
+  <meta charset="UTF-8" />
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+  <script src="auth.js"></script>
   <style>
     body {
-      background-color: #111;
+      background: #111;
       color: white;
       font-family: sans-serif;
       display: flex;
@@ -15,34 +18,32 @@
       justify-content: center;
       height: 100vh;
     }
-
-    input, button {
-      margin: 8px;
+    input {
       padding: 10px;
       font-size: 16px;
+      margin: 5px;
+      width: 250px;
     }
-
     button {
+      padding: 10px 20px;
+      margin-top: 10px;
+      font-weight: bold;
       cursor: pointer;
     }
-
-    #error {
-      color: #ff4c4c;
+    #message {
+      margin-top: 15px;
       font-weight: bold;
-      margin-top: 10px;
     }
   </style>
 </head>
 <body>
-
   <h1>Forge Identity</h1>
   <p>Enter your unique name and password to enter the table.</p>
 
-  <input type="text" id="displayName" placeholder="Display Name">
-  <input type="password" id="password" placeholder="Password">
-  <button id="confirmBtn">Confirm Identity</button>
+  <input type="text" id="displayName" placeholder="Display Name" />
+  <input type="password" id="password" placeholder="Password" />
+  <button onclick="loginOrRegister()">Confirm Identity</button>
 
-  <div id="error"></div>
-
+  <div id="message"></div>
 </body>
 </html>
