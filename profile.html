@@ -20,40 +20,42 @@
     window.handleLogin = async () => {
       const displayName = document.getElementById("displayName").value.trim();
       const password = document.getElementById("password").value;
+      const messageBox = document.getElementById("message");
 
       if (!displayName || !password) {
-        alert("Enter both display name and password.");
+        messageBox.textContent = "Enter name and password.";
         return;
       }
 
       const email = `${displayName}@tableforge.app`;
-      console.log("🧪 Trying login for:", email);
 
       try {
-        const userCredential = await signInWithEmailAndPassword(auth, email, password);
-        alert("✅ Login successful!");
-        console.log("🔓 User logged in:", userCredential.user);
-        window.location.href = "/lobby.html";
-      } catch (loginError) {
-        console.warn("Login failed. Trying signup next...", loginError);
-        try {
-          const newUser = await createUserWithEmailAndPassword(auth, email, password);
-          alert("✨ Account created!");
-          console.log("🎉 New user:", newUser.user);
-          window.location.href = "/lobby.html";
-        } catch (signupError) {
-          console.error("Signup failed too!", signupError);
-          alert("❌ " + signupError.message);
+        await signInWithEmailAndPassword(auth, email, password);
+        localStorage.setItem("displayName", displayName);
+        messageBox.textContent = "Welcome back!";
+        setTimeout(() => window.location.href = "/", 1000);
+      } catch (err) {
+        if (err.code === "auth/user-not-found") {
+          try {
+            await createUserWithEmailAndPassword(auth, email, password);
+            localStorage.setItem("displayName", displayName);
+            messageBox.textContent = "Account created!";
+            setTimeout(() => window.location.href = "/", 1000);
+          } catch (signupErr) {
+            messageBox.textContent = "Signup failed: " + signupErr.message;
+          }
+        } else {
+          messageBox.textContent = "Login failed: " + err.message;
         }
       }
     };
   </script>
 </head>
-<body style="background-color: #111; color: white; font-family: sans-serif; text-align: center; margin-top: 100px;">
+<body style="background: #111; color: white; font-family: sans-serif; text-align: center; margin-top: 100px;">
   <h1>Forge Identity</h1>
-  <p>Enter your unique name and password to enter the table.</p>
-  <input id="displayName" placeholder="Display Name" style="margin: 10px; padding: 10px;" /><br />
-  <input id="password" type="password" placeholder="Password" style="margin: 10px; padding: 10px;" /><br />
-  <button onclick="handleLogin()" style="padding: 10px 20px;">Confirm Identity</button>
+  <input id="displayName" placeholder="Display Name" /><br />
+  <input id="password" type="password" placeholder="Password" /><br />
+  <button onclick="handleLogin()">Confirm Identity</button>
+  <p id="message" style="color: #f66;"></p>
 </body>
 </html>
