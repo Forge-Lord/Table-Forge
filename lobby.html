@@ -1,24 +1,23 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-  <meta charset="UTF-8" />
-  <title>Lobby</title>
+  <title>Table Forge Lobby</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <link rel="stylesheet" href="style.css" />
-</head>
-<body>
-  <h2 id="roomHeader">Room: </h2>
-  <textarea id="hostNotes" placeholder="Host notes... (visible to all)"></textarea>
-  <input id="displayName" placeholder="Enter your name" />
-  <select id="gameSelect">
-    <option>Commander</option>
-    <option>Yu-Gi-Oh</option>
-    <option>Digimon</option>
-  </select>
-  <button id="joinBtn">Join</button>
-  <div id="players"></div>
-  <button id="startButton" style="display:none;">Start Game</button>
-
+  <link rel="stylesheet" href="style.css">
   <script type="module" src="script.js"></script>
+</head>
+<body style="background: #111; color: white; font-family: sans-serif; padding: 2em; text-align: center;">
+
+  <h1>Table Forge Lobby</h1>
+  <p id="roomCode" style="font-size: 1.2em; margin-bottom: 20px;"></p>
+
+  <div>
+    <input id="roomCodeInput" placeholder="Enter Room Code" style="padding: 8px; width: 200px;" />
+    <button onclick="joinRoomByCode()">Join Room</button>
+  </div>
+
+  <div id="players" style="margin-top: 2em;"></div>
+  <button id="startGame" style="display: none; margin-top: 20px;" onclick="startGame()">Start Game</button>
+
 </body>
 </html>
