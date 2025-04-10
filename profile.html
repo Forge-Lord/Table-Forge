@@ -2,37 +2,25 @@
 <html>
 <head>
   <title>Forge Identity</title>
-  <meta charset="UTF-8" />
-  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
-  <script src="auth.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth.js"></script>
   <style>
     body {
-      background: #111;
+      background-color: #111;
       color: white;
       font-family: sans-serif;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      height: 100vh;
+      text-align: center;
+      margin-top: 100px;
     }
-    input {
+
+    input, button {
       padding: 10px;
-      font-size: 16px;
-      margin: 5px;
-      width: 250px;
+      margin: 10px;
     }
-    button {
-      padding: 10px 20px;
-      margin-top: 10px;
-      font-weight: bold;
-      cursor: pointer;
-    }
+
     #message {
-      margin-top: 15px;
-      font-weight: bold;
+      margin-top: 20px;
+      color: #f66;
     }
   </style>
 </head>
@@ -40,10 +28,38 @@
   <h1>Forge Identity</h1>
   <p>Enter your unique name and password to enter the table.</p>
 
-  <input type="text" id="displayName" placeholder="Display Name" />
-  <input type="password" id="password" placeholder="Password" />
-  <button onclick="loginOrRegister()">Confirm Identity</button>
+  <input type="text" id="displayName" placeholder="Display Name"><br>
+  <input type="password" id="password" placeholder="Password"><br>
+  <button onclick="login()">Confirm Identity</button>
+  <p id="message"></p>
 
-  <div id="message"></div>
+  <script>
+    // Firebase config (your actual project info)
+    const firebaseConfig = {
+      apiKey: "AIzaSyBzvVpMCdg3Y6i5vCGWarorcTmzBzjmPow",
+      authDomain: "tableforge-app.firebaseapp.com",
+      projectId: "tableforge-app",
+    };
+
+    firebase.initializeApp(firebaseConfig);
+    const auth = firebase.auth();
+
+    function login() {
+      const displayName = document.getElementById("displayName").value;
+      const password = document.getElementById("password").value;
+      const email = `${displayName}@tableforge.app`; // Forge-style email trick
+
+      auth.signInWithEmailAndPassword(email, password)
+        .then((userCredential) => {
+          document.getElementById("message").textContent = "Login successful!";
+          setTimeout(() => {
+            window.location.href = "/"; // send back to main page
+          }, 1000);
+        })
+        .catch((error) => {
+          document.getElementById("message").textContent = `Login failed: ${error.message}`;
+        });
+    }
+  </script>
 </body>
 </html>
