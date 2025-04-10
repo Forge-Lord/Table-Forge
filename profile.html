@@ -41,7 +41,7 @@
 
   <script>
     const firebaseConfig = {
-      apiKey: "YOUR_API_KEY",
+      apiKey: "AIzaSyBzvVpMCdg3Y6i5vCGWarorcTmzBzjmPow",
       authDomain: "tableforge-app.firebaseapp.com",
       projectId: "tableforge-app",
       storageBucket: "tableforge-app.appspot.com",
@@ -76,9 +76,11 @@
                 setTimeout(() => window.location.href = "/lobby.html", 1000);
               })
               .catch((createErr) => {
+                messageDiv.style.color = "#f55";
                 messageDiv.textContent = "Signup failed: " + createErr.message;
               });
           } else {
+            messageDiv.style.color = "#f55";
             messageDiv.textContent = "Login failed: " + error.message;
           }
         });
