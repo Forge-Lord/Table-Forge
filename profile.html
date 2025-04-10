@@ -1,61 +1,88 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
   <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Forge Identity</title>
-  <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
-    import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-auth.js";
+  <style>
+    body {
+      background-color: #111;
+      color: white;
+      font-family: sans-serif;
+      text-align: center;
+      margin-top: 100px;
+    }
+    input {
+      margin: 10px;
+      padding: 8px;
+      font-size: 16px;
+    }
+    button {
+      padding: 10px 20px;
+      font-size: 16px;
+    }
+    #message {
+      margin-top: 20px;
+      color: #f55;
+    }
+  </style>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+</head>
+<body>
+  <h1>Forge Identity</h1>
+  <p>Enter your unique name and password to enter the table.</p>
+  <input type="text" id="displayName" placeholder="Display Name" />
+  <br />
+  <input type="password" id="password" placeholder="Password" />
+  <br />
+  <button onclick="confirmIdentity()">Confirm Identity</button>
+  <div id="message"></div>
 
+  <script>
     const firebaseConfig = {
-      apiKey: "AIzaSyBzvVpMCdg3Y6i5vCGWarorcTmzBzjmPow",
+      apiKey: "YOUR_API_KEY",
       authDomain: "tableforge-app.firebaseapp.com",
       projectId: "tableforge-app",
+      storageBucket: "tableforge-app.appspot.com",
+      messagingSenderId: "708497363618",
       appId: "1:708497363618:web:39da060b48681944923dfb"
     };
 
-    const app = initializeApp(firebaseConfig);
-    const auth = getAuth(app);
+    firebase.initializeApp(firebaseConfig);
+    const auth = firebase.auth();
 
-    window.handleLogin = async () => {
-      const displayName = document.getElementById("displayName").value.trim();
-      const password = document.getElementById("password").value;
-      const messageBox = document.getElementById("message");
+    function confirmIdentity() {
+      const displayName = document.getElementById('displayName').value.trim();
+      const password = document.getElementById('password').value;
+      const messageDiv = document.getElementById('message');
+      const email = `${displayName}@forge.local`;
 
-      if (!displayName || !password) {
-        messageBox.textContent = "Enter name and password.";
-        return;
-      }
+      messageDiv.textContent = '';
 
-      const email = `${displayName}@tableforge.app`;
-
-      try {
-        await signInWithEmailAndPassword(auth, email, password);
-        localStorage.setItem("displayName", displayName);
-        messageBox.textContent = "Welcome back!";
-        setTimeout(() => window.location.href = "/", 1000);
-      } catch (err) {
-        if (err.code === "auth/user-not-found") {
-          try {
-            await createUserWithEmailAndPassword(auth, email, password);
-            localStorage.setItem("displayName", displayName);
-            messageBox.textContent = "Account created!";
-            setTimeout(() => window.location.href = "/", 1000);
-          } catch (signupErr) {
-            messageBox.textContent = "Signup failed: " + signupErr.message;
+      auth.signInWithEmailAndPassword(email, password)
+        .then((userCredential) => {
+          localStorage.setItem("displayName", displayName);
+          window.location.href = "/lobby.html";
+        })
+        .catch((error) => {
+          if (error.code === 'auth/user-not-found') {
+            // Try creating user
+            auth.createUserWithEmailAndPassword(email, password)
+              .then((userCredential) => {
+                localStorage.setItem("displayName", displayName);
+                messageDiv.style.color = "#0f0";
+                messageDiv.textContent = "✨ Account created! Redirecting...";
+                setTimeout(() => window.location.href = "/lobby.html", 1000);
+              })
+              .catch((createErr) => {
+                messageDiv.textContent = "Signup failed: " + createErr.message;
+              });
+          } else {
+            messageDiv.textContent = "Login failed: " + error.message;
           }
-        } else {
-          messageBox.textContent = "Login failed: " + err.message;
-        }
-      }
-    };
+        });
+    }
   </script>
-</head>
-<body style="background: #111; color: white; font-family: sans-serif; text-align: center; margin-top: 100px;">
-  <h1>Forge Identity</h1>
-  <input id="displayName" placeholder="Display Name" /><br />
-  <input id="password" type="password" placeholder="Password" /><br />
-  <button onclick="handleLogin()">Confirm Identity</button>
-  <p id="message" style="color: #f66;"></p>
 </body>
 </html>
