@@ -1,51 +1,51 @@
-<script type="module">
-  // Firebase imports
-  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.10.0/firebase-app.js";
-  import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/10.10.0/firebase-auth.js";
+// Firebase config (you already know this!)
+const firebaseConfig = {
+  apiKey: "AIzaSyBzvVpMCdg3Y6i5vCGWarorcTmzBzjmPow",
+  authDomain: "tableforge-app.firebaseapp.com",
+  projectId: "tableforge-app",
+  storageBucket: "tableforge-app.appspot.com",
+  messagingSenderId: "708497363618",
+  appId: "1:708497363618:web:39da060b48681944923dfb"
+};
 
-  const firebaseConfig = {
-    apiKey: "AIzaSyBzvVpMCdg3Y6i5vCGWarorcTmzBzjmPow",
-    authDomain: "tableforge-app.firebaseapp.com",
-    projectId: "tableforge-app",
-    messagingSenderId: "708497363618",
-    appId: "1:708497363618:web:39da060b48681944923dfb"
-  };
+// Init
+firebase.initializeApp(firebaseConfig);
+const auth = firebase.auth();
+const db = firebase.firestore();
 
-  const app = initializeApp(firebaseConfig);
-  const auth = getAuth(app);
+async function loginOrRegister() {
+  const displayName = document.getElementById("displayName").value.trim();
+  const password = document.getElementById("password").value;
+  const message = document.getElementById("message");
 
-  document.getElementById("confirmBtn").addEventListener("click", async () => {
-    const displayName = document.getElementById("displayName").value.trim();
-    const password = document.getElementById("password").value.trim();
-    const errorDiv = document.getElementById("error");
+  if (!displayName || !password) {
+    message.innerText = "Please enter both display name and password.";
+    return;
+  }
 
-    if (!displayName || !password) {
-      errorDiv.textContent = "Please enter both name and password.";
-      return;
-    }
+  const email = `forge_${displayName}@forge.app`;
 
-    const fakeEmail = `${displayName.toLowerCase().replace(/\s+/g, "")}@tableforge.app`;
-
-    try {
-      await signInWithEmailAndPassword(auth, fakeEmail, password);
-      console.log("Login successful.");
-      localStorage.setItem("displayName", displayName);
-      window.location.href = "/"; // Redirect to homepage or dashboard
-    } catch (loginErr) {
-      if (loginErr.code === "auth/user-not-found") {
-        try {
-          await createUserWithEmailAndPassword(auth, fakeEmail, password);
-          console.log("New account created.");
-          localStorage.setItem("displayName", displayName);
-          window.location.href = "/";
-        } catch (createErr) {
-          errorDiv.textContent = "Failed to create account. Try again.";
-          console.error(createErr);
-        }
-      } else {
-        errorDiv.textContent = "Incorrect password. Try again.";
-        console.error(loginErr);
+  try {
+    // Try login first
+    await auth.signInWithEmailAndPassword(email, password);
+    message.innerText = `Welcome back, ${displayName}.`;
+    setTimeout(() => window.location.href = "index.html", 1500);
+  } catch (loginErr) {
+    // If user not found, try to register
+    if (loginErr.code === "auth/user-not-found") {
+      try {
+        const userCred = await auth.createUserWithEmailAndPassword(email, password);
+        await db.collection("users").doc(userCred.user.uid).set({
+          displayName,
+          createdAt: new Date()
+        });
+        message.innerText = `Welcome to the Forge, ${displayName}.`;
+        setTimeout(() => window.location.href = "index.html", 1500);
+      } catch (signupErr) {
+        message.innerText = "Signup failed: " + signupErr.message;
       }
+    } else {
+      message.innerText = "Login failed: " + loginErr.message;
     }
-  });
-</script>
+  }
+}
