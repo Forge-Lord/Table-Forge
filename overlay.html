@@ -1,19 +1,18 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>Table Forge Overlay</title>
+  <title>Table Forge Overlay - Commander 2.0</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <link rel="stylesheet" href="style.css" />
 </head>
-<body style="margin: 0; background: #111; color: white; font-family: sans-serif;">
-
+<body style="margin:0; background:#111; color:white; font-family:sans-serif;">
   <!-- Top Bar -->
-  <div style="position: absolute; top: 1em; left: 1em;">
-    <span id="playerName" style="font-weight: bold;"></span>
-    <button onclick="flipCamera()" style="margin-left: 10px;">Flip Camera</button>
+  <div style="position: absolute; top: 1em; left: 1em; z-index: 10;">
+    <span id="playerName" style="font-weight: bold; font-size: 1.2em;"></span>
+    <button onclick="flipCamera()" style="margin-left: 10px; padding: 6px 12px;">Flip Camera</button>
   </div>
 
-  <!-- Overlay Grid -->
+  <!-- Grid -->
   <div id="overlayGrid" style="display: grid; grid-template-areas:
     'top-left top-right'
     'bottom-left bottom-right';
