@@ -1,5 +1,3 @@
-// script.js for Table Forge room creation with template
-
 import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-app.js";
 import {
   getDatabase,
@@ -18,11 +16,15 @@ const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
 
 window.createRoom = () => {
-  const displayName = document.getElementById("displayName").value.trim();
+  const displayName = localStorage.getItem("displayName");
   const template = document.getElementById("templateSelect").value || "commander";
-  if (!displayName) return alert("Please enter your name");
 
-  localStorage.setItem("displayName", displayName);
+  if (!displayName) {
+    alert("Please sign in first.");
+    window.location.href = "/profile.html";
+    return;
+  }
+
   const roomId = `room-${Math.random().toString(36).substring(2, 8)}`;
   const roomRef = ref(db, `rooms/${roomId}`);
 
@@ -44,5 +46,7 @@ window.createRoom = () => {
 
 window.joinRoom = () => {
   const code = document.getElementById("roomCodeInput").value.trim();
-  if (code) window.location.href = `lobby.html?room=${code}`;
+  if (code) {
+    window.location.href = `lobby.html?room=${code}`;
+  }
 };
