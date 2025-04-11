@@ -1,32 +1,38 @@
-<!DOCTYPE html>
-<html>
+<!DOCTYPE html><html>
 <head>
   <title>Table Forge Lobby</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <style>
-    body { background: #111; color: white; font-family: sans-serif; text-align: center; margin-top: 80px; }
-    input, button, select { font-size: 16px; padding: 10px; margin: 10px; }
+    body { background: #111; color: white; font-family: sans-serif; text-align: center; margin-top: 60px; }
+    input, button, select { font-size: 16px; padding: 10px; margin: 10px; width: 250px; max-width: 90%; }
   </style>
 </head>
 <body>
-  <h1>Table Forge Lobby</h1>
-  <input type="text" id="name" placeholder="Enter Name" /> <br />
-  <label>Choose Template: </label>
+  <h1>Create or Join a Room</h1>  <h3>Create Room</h3>
+  <input id="name" placeholder="Your Name" /> <br />
+  <input id="roomName" placeholder="Room Name (Optional)" /> <br />
+  <label>Choose Template:</label>
   <select id="template">
     <option value="commander">Commander</option>
     <option value="yugioh">Yu-Gi-Oh!</option>
-  </select><br />
-  <button onclick="createRoom()">Create Room</button><br />
-
-  <input type="text" id="roomCode" placeholder="Enter Room Code" />
-  <button onclick="joinRoom()">Join Room</button>
-
-  <script src="script.js"></script>
-  <script>
+    <option value="digimon">Digimon</option>
+  </select> <br />
+  <label>Number of Players:</label>
+  <select id="playerCount">
+    <option value="2">2</option>
+    <option value="3">3</option>
+    <option value="4">4</option>
+  </select> <br />
+  <button onclick="createRoom()">Create Room</button>  <h3>Join Room</h3>
+  <input id="joinName" placeholder="Your Name" /> <br />
+  <input id="roomCode" placeholder="Room Code" />
+  <button onclick="joinRoom()">Join Room</button>  <script src="script.js" type="module"></script>  <script>
     window.addEventListener("DOMContentLoaded", () => {
       const saved = localStorage.getItem("displayName");
-      if (saved) document.getElementById("name").value = saved;
+      if (saved) {
+        document.getElementById("name").value = saved;
+        document.getElementById("joinName").value = saved;
+      }
     });
-  </script>
-</body>
+  </script></body>
 </html>
