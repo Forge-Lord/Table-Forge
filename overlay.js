@@ -1,3 +1,5 @@
+// overlay.js for Table Forge Commander 2.0
+
 import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-app.js";
 import {
   getDatabase,
@@ -23,14 +25,13 @@ document.getElementById("playerName").textContent = `You: ${displayName}`;
 
 let currentCamMode = localStorage.getItem("cameraFacingMode") || "user"; // user or environment
 let currentStream = null;
+let lastVideoId = null;
 
 function flipCamera() {
   currentCamMode = currentCamMode === "user" ? "environment" : "user";
   localStorage.setItem("cameraFacingMode", currentCamMode);
-  startCamera(lastVideoId); // restart with new mode
+  if (lastVideoId) startCamera(lastVideoId);
 }
-
-let lastVideoId = null;
 
 const playerRef = ref(db, `rooms/${roomId}/players/${displayName}`);
 onValue(playerRef, (snap) => {
@@ -44,13 +45,18 @@ function renderSeat(seat, player) {
   const seatDiv = document.getElementById(seat);
   if (!seatDiv) return;
 
+  const opponents = ["p1", "p2", "p3", "p4"].filter(id => id !== seat);
+  let cmdInputs = opponents.map(pid => {
+    return `<label>${pid.toUpperCase()}: <input id="cmd-${seat}-${pid}" value="${player[`cmd_${pid}`] || 0}" style="width:40px;" /></label>`;
+  }).join(" ");
+
   seatDiv.innerHTML = `
     <div style="background:#222; padding:10px; border:2px solid #555; color:white;">
       <h3>${player.name}</h3>
       <video id="cam-${seat}" autoplay muted playsinline width="240" height="180" style="background:#000; margin-bottom:10px;"></video>
       <p>Life: <input id="life-${seat}" value="${player.life || 40}" /></p>
-      <p>CMD: <input id="cmd-${seat}" value="${player.commander || 0}" /></p>
       <p>Status: <input id="stat-${seat}" value="${player.status || ""}" /></p>
+      <p>CMD:<br/> ${cmdInputs}</p>
       <button onclick="save('${seat}', '${player.name}')">Save</button>
     </div>
   `;
@@ -63,25 +69,26 @@ function renderSeat(seat, player) {
 
 function save(seat, name) {
   const life = parseInt(document.getElementById(`life-${seat}`).value);
-  const cmd = parseInt(document.getElementById(`cmd-${seat}`).value);
   const stat = document.getElementById(`stat-${seat}`).value;
-  update(ref(db, `rooms/${roomId}/players/${name}`), {
-    life, commander: cmd, status: stat
-  });
-  document.getElementById("clickSound").play();
+  const updateData = { life, status: stat };
 
-  if (name === displayName && lastVideoId) {
-    startCamera(lastVideoId);
-  }
+  ["p1", "p2", "p3", "p4"].forEach(pid => {
+    const cmdField = document.getElementById(`cmd-${seat}-${pid}`);
+    if (cmdField) {
+      updateData[`cmd_${pid}`] = parseInt(cmdField.value);
+    }
+  });
+
+  update(ref(db, `rooms/${roomId}/players/${name}`), updateData);
+  document.getElementById("clickSound").play();
+  if (name === displayName && lastVideoId) startCamera(lastVideoId);
 }
 
 function startCamera(videoId) {
   const facingMode = currentCamMode || "user";
   const constraints = { video: { facingMode }, audio: false };
 
-  if (currentStream) {
-    currentStream.getTracks().forEach(track => track.stop());
-  }
+  if (currentStream) currentStream.getTracks().forEach(track => track.stop());
 
   navigator.mediaDevices.getUserMedia(constraints)
     .then((stream) => {
