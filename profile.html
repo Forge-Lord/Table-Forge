@@ -2,31 +2,12 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Forge Identity</title>
   <style>
-    body {
-      background-color: #111;
-      color: white;
-      font-family: sans-serif;
-      text-align: center;
-      margin-top: 100px;
-    }
-    input {
-      margin: 10px;
-      padding: 8px;
-      font-size: 16px;
-      width: 250px;
-    }
-    button {
-      padding: 10px 20px;
-      font-size: 16px;
-      margin: 5px;
-    }
-    #message {
-      margin-top: 20px;
-      color: #f55;
-    }
+    body { background: #111; color: white; font-family: sans-serif; text-align: center; margin-top: 100px; }
+    input, button { margin: 8px; padding: 10px; font-size: 16px; }
+    #message { color: red; margin-top: 10px; }
   </style>
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
@@ -34,12 +15,10 @@
 <body>
   <h1>Forge Identity</h1>
   <p>Enter your unique name and password to enter the table.</p>
-  <input type="text" id="displayName" placeholder="Display Name" />
-  <br />
-  <input type="password" id="password" placeholder="Password" />
-  <br />
+  <input type="text" id="displayName" placeholder="Display Name" /> <br/>
+  <input type="password" id="password" placeholder="Password" /> <br/>
   <button onclick="login()">Confirm Identity</button>
-  <button onclick="createAccount()">Create New Account</button>
+  <button onclick="signup()">Create New Account</button>
   <div id="message"></div>
 
   <script>
@@ -47,52 +26,38 @@
       apiKey: "AIzaSyBzvVpMCdg3Y6i5vCGWarorcTmzBzjmPow",
       authDomain: "tableforge-app.firebaseapp.com",
       projectId: "tableforge-app",
-      storageBucket: "tableforge-app.appspot.com",
-      messagingSenderId: "708497363618",
-      appId: "1:708497363618:web:39da060b48681944923dfb"
     };
-
     firebase.initializeApp(firebaseConfig);
     const auth = firebase.auth();
 
-    function getEmailFromName(rawName) {
-      return rawName.trim().replace(/\s+/g, '') + "@forge.local";
+    function emailFromName(name) {
+      return name.replace(/\s+/g, '').toLowerCase() + "@forge.local";
     }
 
     function login() {
-      const rawName = document.getElementById('displayName').value;
-      const password = document.getElementById('password').value;
-      const email = getEmailFromName(rawName);
-      const messageDiv = document.getElementById('message');
-      messageDiv.textContent = '';
+      const displayName = document.getElementById("displayName").value;
+      const password = document.getElementById("password").value;
+      const email = emailFromName(displayName);
 
       auth.signInWithEmailAndPassword(email, password)
         .then(() => {
-          localStorage.setItem("displayName", rawName.trim());
+          localStorage.setItem("displayName", displayName);
           window.location.href = "/lobby.html";
         })
-        .catch((error) => {
-          messageDiv.textContent = "Login failed: " + error.message;
-        });
+        .catch((e) => document.getElementById("message").innerText = "Login failed: " + e.message);
     }
 
-    function createAccount() {
-      const rawName = document.getElementById('displayName').value;
-      const password = document.getElementById('password').value;
-      const email = getEmailFromName(rawName);
-      const messageDiv = document.getElementById('message');
-      messageDiv.textContent = '';
+    function signup() {
+      const displayName = document.getElementById("displayName").value;
+      const password = document.getElementById("password").value;
+      const email = emailFromName(displayName);
 
       auth.createUserWithEmailAndPassword(email, password)
         .then(() => {
-          localStorage.setItem("displayName", rawName.trim());
-          messageDiv.style.color = "#0f0";
-          messageDiv.textContent = "✨ Account created! Redirecting...";
-          setTimeout(() => window.location.href = "/lobby.html", 1000);
+          localStorage.setItem("displayName", displayName);
+          window.location.href = "/lobby.html";
         })
-        .catch((error) => {
-          messageDiv.textContent = "Signup failed: " + error.message;
-        });
+        .catch((e) => document.getElementById("message").innerText = "Signup failed: " + e.message);
     }
   </script>
 </body>
