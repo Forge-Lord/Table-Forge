@@ -1,9 +1,5 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-app.js";
-import {
-  getDatabase,
-  ref,
-  set
-} from "https://www.gstatic.com/firebasejs/9.22.0/firebase-database.js";
+import { getDatabase, ref, set, get, child } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-database.js";
 
 const firebaseConfig = {
   apiKey: "AIzaSyBzvVpMCdg3Y6i5vCGWarorcTmzBzjmPow",
@@ -11,42 +7,47 @@ const firebaseConfig = {
   projectId: "tableforge-app",
   databaseURL: "https://tableforge-app-default-rtdb.firebaseio.com"
 };
-
 const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
 
-window.createRoom = () => {
-  const displayName = localStorage.getItem("displayName");
-  const template = document.getElementById("templateSelect").value || "commander";
+function makeCode(length = 5) {
+  const chars = "abcdefghijklmnopqrstuvwxyz0123456789";
+  return Array.from({length}, () => chars[Math.floor(Math.random() * chars.length)]).join('');
+}
 
-  if (!displayName) {
-    alert("Please sign in first.");
-    window.location.href = "/profile.html";
-    return;
-  }
+window.createRoom = async function() {
+  const name = document.getElementById("name").value.trim();
+  const template = document.getElementById("template").value;
+  if (!name) return alert("Please enter your name");
+  localStorage.setItem("displayName", name);
 
-  const roomId = `room-${Math.random().toString(36).substring(2, 8)}`;
+  const roomId = "room-" + makeCode();
   const roomRef = ref(db, `rooms/${roomId}`);
-
-  set(roomRef, {
+  await set(roomRef, {
+    host: name,
     template,
     players: {
-      [displayName]: {
-        name: displayName,
-        seat: "p1",
-        life: template === "commander" ? 40 : 8000,
+      [name]: {
+        name,
+        life: 40,
+        commander: 0,
         status: "",
-        commander: 0
+        seat: "p1"
       }
     }
-  }).then(() => {
-    window.location.href = `lobby.html?room=${roomId}`;
   });
-};
+  window.location.href = `/overlay.html?room=${roomId}`;
+}
 
-window.joinRoom = () => {
-  const code = document.getElementById("roomCodeInput").value.trim();
-  if (code) {
-    window.location.href = `lobby.html?room=${code}`;
-  }
-};
+window.joinRoom = async function() {
+  const name = document.getElementById("name").value.trim();
+  const code = document.getElementById("roomCode").value.trim();
+  if (!name || !code) return alert("Please enter name and room code");
+  localStorage.setItem("displayName", name);
+
+  const fullId = `room-${code}`;
+  const roomSnap = await get(child(ref(db), `rooms/${fullId}`));
+  if (!roomSnap.exists()) return alert("Room not found");
+
+  window.location.href = `/overlay.html?room=${fullId}`;
+}
