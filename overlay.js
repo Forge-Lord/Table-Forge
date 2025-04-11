@@ -21,8 +21,18 @@ const roomId = urlParams.get("room");
 const displayName = localStorage.getItem("displayName") || "Unknown";
 document.getElementById("playerName").textContent = `You: ${displayName}`;
 
-const playerRef = ref(db, `rooms/${roomId}/players/${displayName}`);
+let currentCamMode = localStorage.getItem("cameraFacingMode") || "user"; // user or environment
+let currentStream = null;
 
+function flipCamera() {
+  currentCamMode = currentCamMode === "user" ? "environment" : "user";
+  localStorage.setItem("cameraFacingMode", currentCamMode);
+  startCamera(lastVideoId); // restart with new mode
+}
+
+let lastVideoId = null;
+
+const playerRef = ref(db, `rooms/${roomId}/players/${displayName}`);
 onValue(playerRef, (snap) => {
   const data = snap.val();
   if (!data) return;
@@ -46,7 +56,8 @@ function renderSeat(seat, player) {
   `;
 
   if (player.name === displayName) {
-    startCamera(`cam-${seat}`);
+    lastVideoId = `cam-${seat}`;
+    startCamera(lastVideoId);
   }
 }
 
@@ -58,11 +69,23 @@ function save(seat, name) {
     life, commander: cmd, status: stat
   });
   document.getElementById("clickSound").play();
+
+  if (name === displayName && lastVideoId) {
+    startCamera(lastVideoId);
+  }
 }
 
 function startCamera(videoId) {
-  navigator.mediaDevices.getUserMedia({ video: true, audio: false })
+  const facingMode = currentCamMode || "user";
+  const constraints = { video: { facingMode }, audio: false };
+
+  if (currentStream) {
+    currentStream.getTracks().forEach(track => track.stop());
+  }
+
+  navigator.mediaDevices.getUserMedia(constraints)
     .then((stream) => {
+      currentStream = stream;
       const videoEl = document.getElementById(videoId);
       if (videoEl) videoEl.srcObject = stream;
     })
