@@ -2,30 +2,31 @@
 <html>
 <head>
   <title>Table Forge Lobby</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <link rel="stylesheet" href="style.css">
-  <script type="module" src="script.js"></script>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <style>
+    body { background: #111; color: white; font-family: sans-serif; text-align: center; margin-top: 80px; }
+    input, button, select { font-size: 16px; padding: 10px; margin: 10px; }
+  </style>
 </head>
-<body style="background:#111; color:white; font-family:sans-serif; text-align:center; padding:2em;">
-
+<body>
   <h1>Table Forge Lobby</h1>
+  <input type="text" id="name" placeholder="Enter Name" /> <br />
+  <label>Choose Template: </label>
+  <select id="template">
+    <option value="commander">Commander</option>
+    <option value="yugioh">Yu-Gi-Oh!</option>
+  </select><br />
+  <button onclick="createRoom()">Create Room</button><br />
 
-  <div>
-    <input id="displayName" placeholder="Enter Name" style="padding:8px; font-size:1em; width:200px;" /><br/><br/>
-    
-    <label for="templateSelect">Choose Template:</label>
-    <select id="templateSelect" style="padding:6px; font-size:1em;">
-      <option value="commander">Commander</option>
-      <option value="ygo">Yu-Gi-Oh!</option>
-    </select><br/><br/>
-    
-    <button onclick="createRoom()" style="padding:10px 20px; font-size:1em;">Create Room</button>
-  </div>
+  <input type="text" id="roomCode" placeholder="Enter Room Code" />
+  <button onclick="joinRoom()">Join Room</button>
 
-  <div style="margin-top:2em;">
-    <input id="roomCodeInput" placeholder="Enter Room Code" style="padding:8px; font-size:1em; width:200px;" />
-    <button onclick="joinRoom()" style="padding:8px 20px; font-size:1em;">Join Room</button>
-  </div>
-
+  <script src="script.js"></script>
+  <script>
+    window.addEventListener("DOMContentLoaded", () => {
+      const saved = localStorage.getItem("displayName");
+      if (saved) document.getElementById("name").value = saved;
+    });
+  </script>
 </body>
 </html>
