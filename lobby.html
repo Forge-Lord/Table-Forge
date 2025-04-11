@@ -6,18 +6,26 @@
   <link rel="stylesheet" href="style.css">
   <script type="module" src="script.js"></script>
 </head>
-<body style="background: #111; color: white; font-family: sans-serif; padding: 2em; text-align: center;">
+<body style="background:#111; color:white; font-family:sans-serif; text-align:center; padding:2em;">
 
   <h1>Table Forge Lobby</h1>
-  <p id="roomCode" style="font-size: 1.2em; margin-bottom: 20px;"></p>
 
   <div>
-    <input id="roomCodeInput" placeholder="Enter Room Code" style="padding: 8px; width: 200px;" />
-    <button onclick="joinRoomByCode()">Join Room</button>
+    <input id="displayName" placeholder="Enter Name" style="padding:8px; font-size:1em; width:200px;" /><br/><br/>
+    
+    <label for="templateSelect">Choose Template:</label>
+    <select id="templateSelect" style="padding:6px; font-size:1em;">
+      <option value="commander">Commander</option>
+      <option value="ygo">Yu-Gi-Oh!</option>
+    </select><br/><br/>
+    
+    <button onclick="createRoom()" style="padding:10px 20px; font-size:1em;">Create Room</button>
   </div>
 
-  <div id="players" style="margin-top: 2em;"></div>
-  <button id="startGame" style="display: none; margin-top: 20px;" onclick="startGame()">Start Game</button>
+  <div style="margin-top:2em;">
+    <input id="roomCodeInput" placeholder="Enter Room Code" style="padding:8px; font-size:1em; width:200px;" />
+    <button onclick="joinRoom()" style="padding:8px 20px; font-size:1em;">Join Room</button>
+  </div>
 
 </body>
 </html>
