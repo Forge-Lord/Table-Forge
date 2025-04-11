@@ -12,10 +12,16 @@
       text-align: center;
       margin-top: 100px;
     }
-    input, button {
+    input {
       margin: 10px;
-      padding: 10px;
+      padding: 8px;
       font-size: 16px;
+      width: 250px;
+    }
+    button {
+      padding: 10px 20px;
+      font-size: 16px;
+      margin: 5px;
     }
     #message {
       margin-top: 20px;
@@ -28,10 +34,11 @@
 <body>
   <h1>Forge Identity</h1>
   <p>Enter your unique name and password to enter the table.</p>
-
-  <input type="text" id="displayName" placeholder="Display Name"/><br/>
-  <input type="password" id="password" placeholder="Password"/><br/>
-  <button onclick="confirmIdentity()">Confirm Identity</button>
+  <input type="text" id="displayName" placeholder="Display Name" />
+  <br />
+  <input type="password" id="password" placeholder="Password" />
+  <br />
+  <button onclick="login()">Confirm Identity</button>
   <button onclick="createAccount()">Create New Account</button>
   <div id="message"></div>
 
@@ -48,22 +55,20 @@
     firebase.initializeApp(firebaseConfig);
     const auth = firebase.auth();
 
-    function getCreds() {
-      const displayName = document.getElementById("displayName").value.trim();
-      const password = document.getElementById("password").value;
-      const email = `${displayName}@forge.local`;
-      return { displayName, password, email };
+    function getEmailFromName(rawName) {
+      return rawName.trim().replace(/\s+/g, '') + "@forge.local";
     }
 
-    function confirmIdentity() {
-      const { displayName, password, email } = getCreds();
-      const messageDiv = document.getElementById("message");
-      messageDiv.style.color = "#f55";
-      messageDiv.textContent = "";
+    function login() {
+      const rawName = document.getElementById('displayName').value;
+      const password = document.getElementById('password').value;
+      const email = getEmailFromName(rawName);
+      const messageDiv = document.getElementById('message');
+      messageDiv.textContent = '';
 
       auth.signInWithEmailAndPassword(email, password)
         .then(() => {
-          localStorage.setItem("displayName", displayName);
+          localStorage.setItem("displayName", rawName.trim());
           window.location.href = "/lobby.html";
         })
         .catch((error) => {
@@ -72,14 +77,15 @@
     }
 
     function createAccount() {
-      const { displayName, password, email } = getCreds();
-      const messageDiv = document.getElementById("message");
-      messageDiv.style.color = "#f55";
-      messageDiv.textContent = "";
+      const rawName = document.getElementById('displayName').value;
+      const password = document.getElementById('password').value;
+      const email = getEmailFromName(rawName);
+      const messageDiv = document.getElementById('message');
+      messageDiv.textContent = '';
 
       auth.createUserWithEmailAndPassword(email, password)
         .then(() => {
-          localStorage.setItem("displayName", displayName);
+          localStorage.setItem("displayName", rawName.trim());
           messageDiv.style.color = "#0f0";
           messageDiv.textContent = "✨ Account created! Redirecting...";
           setTimeout(() => window.location.href = "/lobby.html", 1000);
