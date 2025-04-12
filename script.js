@@ -10,7 +10,7 @@ const roomId = "room-" + makeCode(); const roomRef = ref(db, rooms/${roomId});
 
 await set(roomRef, { roomName: roomName || null, template, playerCount: parseInt(playerCount), host: name, started: false, players: { [name]: { name, life: template === "commander" ? 40 : 8000, commander: 0, status: "", seat: "p1" } } });
 
-// Display room code to user before redirect alert(Room created! Room code: ${roomId}\nCopied to clipboard.); try { await navigator.clipboard.writeText(roomId); } catch (err) { console.warn("Clipboard write failed", err); }
+// Show room code non-blocking (logs or small toast in future) console.log("Room created:", roomId);
 
 window.location.href = /overlay.html?room=${roomId}; };
 
