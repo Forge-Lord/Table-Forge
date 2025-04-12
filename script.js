@@ -8,9 +8,9 @@ function makeCode(length = 5) { const chars = "abcdefghijklmnopqrstuvwxyz0123456
 
 window.createRoom = async function () { const name = document.getElementById("name").value.trim(); const roomName = document.getElementById("roomName").value.trim(); const template = document.getElementById("template").value; const playerCount = parseInt(document.getElementById("playerCount").value); if (!name) return alert("Please enter your name"); localStorage.setItem("displayName", name);
 
-const roomId = "room-" + makeCode(); const roomRef = ref(db, rooms/${roomId}); const seatMap = { 2: ["p1", "p2"], 3: ["p1", "p2", "p3"], 4: ["p1", "p2", "p3", "p4"] };
+const roomId = room-${makeCode()}; const roomRef = ref(db, rooms/${roomId}); const seatMap = { 2: ["p1", "p2"], 3: ["p1", "p2", "p3"], 4: ["p1", "p2", "p3", "p4"] };
 
-await set(roomRef, { roomName: roomName || null, template, playerCount, host: name, started: false, players: { [name]: { name, life: template === "commander" ? 40 : 8000, commander: 0, status: "", seat: seatMap[playerCount][0] // assign p1 to host } } });
+await set(roomRef, { roomName: roomName || null, template, playerCount, host: name, started: false, players: { [name]: { name, life: template === "commander" ? 40 : 8000, commander: 0, status: "", seat: seatMap[playerCount][0] } } });
 
 joinLobby(roomId); };
 
@@ -22,9 +22,7 @@ function joinLobby(roomId) { currentRoom = roomId; currentName = localStorage.ge
 
 const preGame = document.getElementById("preGame"); const lobbyView = document.getElementById("lobbyView"); const roomDisplay = document.getElementById("roomDisplay"); if (preGame) preGame.style.display = "none"; if (lobbyView) lobbyView.style.display = "block"; if (roomDisplay) roomDisplay.textContent = roomId;
 
-const roomRef = ref(db, rooms/${roomId});
-
-onValue(roomRef, snap => { const data = snap.val(); if (!data) return;
+const roomRef = ref(db, rooms/${roomId}); onValue(roomRef, snap => { const data = snap.val(); if (!data) return;
 
 const playerListDiv = document.getElementById("playerList");
 if (playerListDiv) {
