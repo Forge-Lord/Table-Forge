@@ -26,7 +26,7 @@
   <button onclick="createRoom()">Create Room</button>  <h3>Join Room</h3>
   <input id="joinName" placeholder="Your Name" /> <br />
   <input id="roomCode" placeholder="Room Code" />
-  <button onclick="joinRoom()">Join Room</button>  <script src="script.js" type="module"></script>  <script>
+  <button onclick="joinRoom()">Join Room</button>  <script type="module" src="script.js"></script>  <script>
     window.addEventListener("DOMContentLoaded", () => {
       const saved = localStorage.getItem("displayName");
       if (saved) {
