@@ -1,4 +1,4 @@
-// overlay.js dynamic layout for Table Forge import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-app.js"; import { getDatabase, ref, onValue, update } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-database.js";
+// overlay.js with fixed template strings and dynamic layout import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-app.js"; import { getDatabase, ref, onValue, update } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-database.js";
 
 const firebaseConfig = { apiKey: "AIzaSyBzvVpMCdg3Y6i5vCGWarorcTmzBzjmPow", authDomain: "tableforge-app.firebaseapp.com", projectId: "tableforge-app", databaseURL: "https://tableforge-app-default-rtdb.firebaseio.com" }; const app = initializeApp(firebaseConfig); const db = getDatabase(app);
 
@@ -14,11 +14,9 @@ async function startCamera(videoId, deviceId = null) { const constraints = devic
 
 navigator.mediaDevices.enumerateDevices().then(devices => { videoDevices = devices.filter(d => d.kind === "videoinput"); });
 
-const roomRef = ref(db, rooms/${roomId}); onValue(roomRef, snap => { const data = snap.val(); if (!data) return; const template = data.template || "commander"; const playerCount = parseInt(data.playerCount) || 4; const players = data.players || {}; const seatOrder = ["p1", "p2", "p3", "p4"]; const seatsUsed = seatOrder.filter(seat => Object.values(players).some(p => p.seat === seat));
+const roomRef = ref(db, rooms/${roomId}); onValue(roomRef, snap => { const data = snap.val(); if (!data) return; const template = data.template || "commander"; const playerCount = parseInt(data.playerCount) || 4; const players = data.players || {}; const seatOrder = ["p1", "p2", "p3", "p4"];
 
-const gridLayout = { 2: "1fr / 1fr", 3: "1fr 1fr / 1fr 1fr", 4: "1fr 1fr / 1fr 1fr" };
-
-layout.style.gridTemplate = gridLayout[playerCount] || gridLayout[4]; layout.innerHTML = "";
+const gridLayout = { 2: "1fr / 1fr", 3: "1fr 1fr / 1fr 1fr", 4: "1fr 1fr / 1fr 1fr" }; layout.style.gridTemplate = gridLayout[playerCount] || gridLayout[4]; layout.innerHTML = "";
 
 for (const seat of seatOrder) { const player = Object.values(players).find(p => p.seat === seat); if (!player) continue;
 
@@ -32,12 +30,14 @@ slot.innerHTML = `
   <video id="cam-${seat}" autoplay muted playsinline width="100%" style="background:#000; height:180px;"></video>
   <div>Life: <input id="life-${seat}" value="${player.life}" /></div>
 `;
+
 if (template === "commander") {
-  const cmd = ["p1", "p2", "p3", "p4"].filter(x => x !== seat).map(pid => {
+  const cmd = seatOrder.filter(x => x !== seat).map(pid => {
     return `<label>${pid.toUpperCase()}: <input id="cmd-${seat}-${pid}" value="${player[`cmd_${pid}`] || 0}" style="width:40px;" /></label>`;
   }).join(" ");
   slot.innerHTML += `<div>Status: <input id="stat-${seat}" value="${player.status || ''}" /></div><div>CMD:<br/>${cmd}</div>`;
 }
+
 slot.innerHTML += `<button onclick="save('${seat}', '${player.name}', '${template}')">Save</button>`;
 layout.appendChild(slot);
 
@@ -48,5 +48,9 @@ if (player.name === displayName) {
 
 } });
 
-function save(seat, name, template) { const life = parseInt(document.getElementById(life-${seat}).value); const updateData = { life }; if (template === "commander") { updateData.status = document.getElementById(stat-${seat}).value; ["p1", "p2", "p3", "p4"].forEach(pid => { const cmd = document.getElementById(cmd-${seat}-${pid}); if (cmd) updateData[cmd_${pid}] = parseInt(cmd.value); }); } update(ref(db, rooms/${roomId}/players/${name}), updateData); }
+function save(seat, name, template) { const life = parseInt(document.getElementById(life-${seat}).value); const updateData = { life };
+
+if (template === "commander") { updateData.status = document.getElementById(stat-${seat}).value; ["p1", "p2", "p3", "p4"].forEach(pid => { const cmd = document.getElementById(cmd-${seat}-${pid}); if (cmd) updateData[cmd_${pid}] = parseInt(cmd.value); }); }
+
+update(ref(db, rooms/${roomId}/players/${name}), updateData); }
 
