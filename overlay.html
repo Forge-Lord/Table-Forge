@@ -1,29 +1,53 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>Table Forge Overlay - Commander 2.0</title>
+  <title>Table Forge Overlay</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <link rel="stylesheet" href="style.css" />
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      background: #000;
+      color: white;
+      font-family: sans-serif;
+      overflow: hidden;
+    }
+    #overlayContainer {
+      display: grid;
+      width: 100vw;
+      height: 100vh;
+      gap: 4px;
+      padding: 4px;
+      box-sizing: border-box;
+    }
+    .player-box {
+      border: 2px solid #333;
+      padding: 8px;
+      background: #111;
+    }
+    video {
+      width: 100%;
+      height: auto;
+      max-height: 180px;
+      background: #000;
+      display: block;
+      margin-bottom: 8px;
+    }
+    input {
+      font-size: 14px;
+      padding: 4px;
+      margin: 4px;
+      width: 60px;
+    }
+    button {
+      padding: 6px 12px;
+      font-size: 14px;
+      margin-top: 6px;
+    }
+  </style>
 </head>
-<body style="margin:0; background:#111; color:white; font-family:sans-serif;">
-  <!-- Top Bar -->
-  <div style="position: absolute; top: 1em; left: 1em; z-index: 10;">
-    <span id="playerName" style="font-weight: bold; font-size: 1.2em;"></span>
-    <button onclick="flipCamera()" style="margin-left: 10px; padding: 6px 12px;">Flip Camera</button>
-  </div>
-
-  <!-- Grid -->
-  <div id="overlayGrid" style="display: grid; grid-template-areas:
-    'top-left top-right'
-    'bottom-left bottom-right';
-    height: 100vh; width: 100vw; gap: 1em; padding: 1em;">
-    <div id="p1" style="grid-area: top-left;"></div>
-    <div id="p2" style="grid-area: top-right;"></div>
-    <div id="p3" style="grid-area: bottom-left;"></div>
-    <div id="p4" style="grid-area: bottom-right;"></div>
-  </div>
-
-  <audio id="clickSound" src="https://actions.google.com/sounds/v1/cartoon/wood_plank_flicks.ogg"></audio>
+<body>
+  <div id="overlayContainer"></div>
   <script type="module" src="overlay.js"></script>
 </body>
 </html>
