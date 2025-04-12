@@ -1,4 +1,4 @@
-// overlay.js for Table Forge with video, layout, and data sync
+// overlay.js (debug-enabled)
 
 import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-app.js";
 import { getDatabase, ref, onValue, update } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-database.js";
@@ -17,11 +17,17 @@ const urlParams = new URLSearchParams(window.location.search);
 const roomId = urlParams.get("room");
 const displayName = localStorage.getItem("displayName") || "Unknown";
 
+if (!roomId) {
+  document.body.innerHTML = "<h1 style='color:red;'>Missing room ID in URL!</h1>";
+  throw new Error("Missing room ID");
+}
+
 let currentStream = null;
 let currentDeviceId = null;
 let videoDevices = [];
 let lastVideoId = null;
 
+document.body.innerHTML = "";
 document.body.style.margin = "0";
 document.body.style.background = "#000";
 const layout = document.createElement("div");
@@ -49,6 +55,7 @@ async function startCamera(videoId, deviceId = null) {
     currentDeviceId = stream.getVideoTracks()[0]?.getSettings()?.deviceId;
   } catch (err) {
     console.error("Camera error", err);
+    document.body.innerHTML = `<h2 style="color:red;">Camera error: ${err.message}</h2>`;
   }
 }
 
@@ -62,7 +69,10 @@ window.flipCamera = function () {
 const roomRef = ref(db, `rooms/${roomId}`);
 onValue(roomRef, snap => {
   const data = snap.val();
-  if (!data) return;
+  if (!data) {
+    document.body.innerHTML = `<h2 style="color:red;">Room not found: ${roomId}</h2>`;
+    return;
+  }
 
   const template = data.template || "commander";
   const playerCount = parseInt(data.playerCount) || 4;
