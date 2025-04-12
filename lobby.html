@@ -3,36 +3,45 @@
   <title>Table Forge Lobby</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <style>
-    body { background: #111; color: white; font-family: sans-serif; text-align: center; margin-top: 60px; }
-    input, button, select { font-size: 16px; padding: 10px; margin: 10px; width: 250px; max-width: 90%; }
+    body { background: #111; color: white; font-family: sans-serif; text-align: center; margin-top: 40px; }
+    input, button, select { font-size: 16px; padding: 10px; margin: 8px; width: 260px; max-width: 90%; }
+    #playerList { margin-top: 2em; }
+    .player-entry { padding: 6px; border-bottom: 1px solid #444; }
+    .flip-button { background: #333; color: #fff; border: 1px solid #666; cursor: pointer; margin-top: 1em; }
   </style>
 </head>
 <body>
-  <h1>Create or Join a Room</h1>  <h3>Create Room</h3>
-  <input id="name" placeholder="Your Name" /> <br />
-  <input id="roomName" placeholder="Room Name (Optional)" /> <br />
-  <label>Choose Template:</label>
-  <select id="template">
-    <option value="commander">Commander</option>
-    <option value="yugioh">Yu-Gi-Oh!</option>
-    <option value="digimon">Digimon</option>
-  </select> <br />
-  <label>Number of Players:</label>
-  <select id="playerCount">
-    <option value="2">2</option>
-    <option value="3">3</option>
-    <option value="4">4</option>
-  </select> <br />
-  <button onclick="createRoom()">Create Room</button>  <h3>Join Room</h3>
-  <input id="joinName" placeholder="Your Name" /> <br />
-  <input id="roomCode" placeholder="Room Code" />
-  <button onclick="joinRoom()">Join Room</button>  <script type="module" src="script.js"></script>  <script>
-    window.addEventListener("DOMContentLoaded", () => {
-      const saved = localStorage.getItem("displayName");
-      if (saved) {
-        document.getElementById("name").value = saved;
-        document.getElementById("joinName").value = saved;
-      }
-    });
+  <h1>Create or Join a Room</h1>  <div id="preGame" style="display: block;">
+    <h3>Create Room</h3>
+    <input id="name" placeholder="Your Name" /> <br />
+    <input id="roomName" placeholder="Room Name (Optional)" /> <br />
+    <label>Choose Template:</label>
+    <select id="template">
+      <option value="commander">Commander</option>
+      <option value="yugioh">Yu-Gi-Oh!</option>
+      <option value="digimon">Digimon</option>
+    </select> <br />
+    <label>Number of Players:</label>
+    <select id="playerCount">
+      <option value="2">2</option>
+      <option value="3">3</option>
+      <option value="4">4</option>
+    </select> <br />
+    <button onclick="createRoom()">Create Room</button><h3>Join Room</h3>
+<input id="joinName" placeholder="Your Name" /> <br />
+<input id="roomCode" placeholder="Room Code" />
+<button onclick="joinRoom()">Join Room</button>
+
+  </div>  <div id="lobbyView" style="display: none;">
+    <h2>Lobby Room: <span id="roomDisplay"></span></h2>
+    <button class="flip-button" onclick="flipCamera()">Flip Camera</button>
+    <div id="playerList"></div>
+    <button id="startGameBtn" onclick="startGame()" style="display: none; margin-top: 2em;">Start Game</button>
+  </div>  <script type="module" src="script.js"></script>  <script>
+    const saved = localStorage.getItem("displayName");
+    if (saved) {
+      document.getElementById("name").value = saved;
+      document.getElementById("joinName").value = saved;
+    }
   </script></body>
 </html>
