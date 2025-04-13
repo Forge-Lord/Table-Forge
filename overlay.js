@@ -1,22 +1,131 @@
-// overlay.js with visible debug output import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-app.js"; import { getDatabase, ref, onValue, update } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-database.js";
+import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-app.js";
+import {
+  getDatabase,
+  ref,
+  onValue,
+  update
+} from "https://www.gstatic.com/firebasejs/9.22.0/firebase-database.js";
 
-const firebaseConfig = { apiKey: "AIzaSyBzvVpMCdg3Y6i5vCGWarorcTmzBzjmPow", authDomain: "tableforge-app.firebaseapp.com", projectId: "tableforge-app", databaseURL: "https://tableforge-app-default-rtdb.firebaseio.com" }; const app = initializeApp(firebaseConfig); const db = getDatabase(app);
+const firebaseConfig = {
+  apiKey: "AIzaSyBzvVpMCdg3Y6i5vCGWarorcTmzBzjmPow",
+  authDomain: "tableforge-app.firebaseapp.com",
+  projectId: "tableforge-app",
+  databaseURL: "https://tableforge-app-default-rtdb.firebaseio.com"
+};
 
-const urlParams = new URLSearchParams(window.location.search); const roomId = urlParams.get("room"); const displayName = localStorage.getItem("displayName") || "Unknown";
+const app = initializeApp(firebaseConfig);
+const db = getDatabase(app);
 
-const debug = document.createElement("div"); debug.style.position = "absolute"; debug.style.top = "8px"; debug.style.left = "8px"; debug.style.color = "lime"; debug.style.fontSize = "14px"; debug.innerText = Overlay loading...\nRoom: ${roomId}\nPlayer: ${displayName}; document.body.appendChild(debug);
+const urlParams = new URLSearchParams(window.location.search);
+const roomId = urlParams.get("room");
+const displayName = localStorage.getItem("displayName") || "Unknown";
 
-const layout = document.createElement("div"); layout.style.padding = "16px"; layout.style.color = "white"; document.body.appendChild(layout);
+const layout = document.getElementById("overlayContainer");
+layout.innerHTML = "";
+layout.style.gridTemplate = "1fr 1fr / 1fr 1fr"; // temporary 2x2 grid
 
-let currentStream = null; let lastVideoId = null;
+let currentStream = null;
+let lastVideoId = null;
+let currentDeviceId = null;
 
-function startCamera(videoId) { navigator.mediaDevices.getUserMedia({ video: true, audio: false }) .then(stream => { currentStream = stream; const el = document.getElementById(videoId); if (el) el.srcObject = stream; debug.innerText += "\nCamera started"; }) .catch(err => { debug.innerText += \nCamera error: ${err.message}; }); }
+function log(msg) {
+  console.log("[OVERLAY]", msg);
+  const out = document.getElementById("debugBox");
+  if (out) out.innerText += `\n${msg}`;
+}
 
-onValue(ref(db, rooms/${roomId}), snap => { const data = snap.val(); if (!data) { debug.innerText += "\nRoom not found."; return; }
+function startCamera(videoId) {
+  navigator.mediaDevices.getUserMedia({ video: true, audio: false })
+    .then(stream => {
+      currentStream = stream;
+      const el = document.getElementById(videoId);
+      if (el) el.srcObject = stream;
+      currentDeviceId = stream.getVideoTracks()[0]?.getSettings()?.deviceId;
+      log("Camera started for " + videoId);
+    })
+    .catch(err => {
+      log("Camera error: " + err.message);
+    });
+}
 
-const players = data.players || {}; const player = players[displayName];
+function renderPlayer(seat, player, template) {
+  const box = document.createElement("div");
+  box.className = "player-box";
+  box.style.border = "2px solid #555";
+  box.style.padding = "8px";
+  box.style.background = "#111";
 
-if (!player) { debug.innerText += "\nYou are not a player in this room."; return; }
+  box.innerHTML = `
+    <h3>${player.name}</h3>
+    <video id="cam-${seat}" autoplay muted playsinline style="width:100%; background:#000; height:180px; margin-bottom:8px;"></video>
+    <div>Life: <input id="life-${seat}" value="${player.life || 40}" /></div>
+  `;
 
-layout.innerHTML = ""; const div = document.createElement("div"); div.innerHTML = <h2>${player.name}</h2> <video id="cam-${player.seat}" autoplay muted playsinline width="100%" style="background:#000; height:180px;"></video> <div>Life: <input id="life-${player.seat}" value="${player.life || 40}" /></div>; layout.appendChild(div); lastVideoId = cam-${player.seat}; startCamera(lastVideoId); });
+  if (template === "commander") {
+    const others = ["p1", "p2", "p3", "p4"].filter(x => x !== seat);
+    const cmdInputs = others.map(pid => `
+      ${pid.toUpperCase()}: <input id="cmd-${seat}-${pid}" value="${player[`cmd_${pid}`] || 0}" style="width:40px;" />
+    `).join(" ");
+    box.innerHTML += `
+      <div>Status: <input id="stat-${seat}" value="${player.status || ""}" /></div>
+      <div>CMD:<br/>${cmdInputs}</div>
+    `;
+  }
 
+  box.innerHTML += `<button onclick="save('${seat}', '${player.name}', '${template}')">Save</button>`;
+  layout.appendChild(box);
+
+  if (player.name === displayName) {
+    lastVideoId = `cam-${seat}`;
+    log("Match found for this player! Seat: " + seat);
+    startCamera(lastVideoId);
+  }
+}
+
+function save(seat, name, template) {
+  const life = parseInt(document.getElementById(`life-${seat}`).value);
+  const updateData = { life };
+
+  if (template === "commander") {
+    updateData.status = document.getElementById(`stat-${seat}`).value;
+    ["p1", "p2", "p3", "p4"].forEach(pid => {
+      const cmd = document.getElementById(`cmd-${seat}-${pid}`);
+      if (cmd) updateData[`cmd_${pid}`] = parseInt(cmd.value);
+    });
+  }
+
+  update(ref(db, `rooms/${roomId}/players/${name}`), updateData);
+  log(`Saved data for ${name}`);
+}
+
+const debugOut = document.createElement("pre");
+debugOut.id = "debugBox";
+debugOut.style.position = "absolute";
+debugOut.style.bottom = "10px";
+debugOut.style.left = "10px";
+debugOut.style.fontSize = "12px";
+debugOut.style.color = "lime";
+debugOut.style.background = "rgba(0,0,0,0.5)";
+debugOut.style.padding = "6px";
+debugOut.style.maxHeight = "150px";
+debugOut.style.overflowY = "auto";
+document.body.appendChild(debugOut);
+
+onValue(ref(db, `rooms/${roomId}`), snap => {
+  const data = snap.val();
+  if (!data) return log("No data for room");
+
+  const template = data.template || "commander";
+  const players = data.players || {};
+
+  layout.innerHTML = "";
+  for (const pname in players) {
+    const player = players[pname];
+    const seat = player.seat || "p1";
+    renderPlayer(seat, player, template);
+  }
+
+  if (!Object.keys(players).includes(displayName)) {
+    log("You're not in the room player list!");
+  }
+});
