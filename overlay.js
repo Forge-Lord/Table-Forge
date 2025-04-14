@@ -16,22 +16,22 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
 
+const container = document.getElementById("overlayContainer");
+const debug = document.getElementById("debugLog");
+
 const urlParams = new URLSearchParams(window.location.search);
 const roomId = urlParams.get("room");
 const displayName = localStorage.getItem("displayName") || "Unknown";
 
-const container = document.getElementById("overlayContainer");
-const debugBox = document.getElementById("debugBox");
+let lastVideoId = null;
+let currentStream = null;
+let videoDevices = [];
+let currentDeviceId = null;
 
 function log(msg) {
   console.log("[Overlay]", msg);
-  debugBox.textContent += "\n" + msg;
+  debug.textContent += "\n" + msg;
 }
-
-let currentStream = null;
-let lastVideoId = null;
-let videoDevices = [];
-let currentDeviceId = null;
 
 navigator.mediaDevices.enumerateDevices().then(devices => {
   videoDevices = devices.filter(d => d.kind === "videoinput");
@@ -62,12 +62,12 @@ window.flipCamera = function () {
   const i = videoDevices.findIndex(d => d.deviceId === currentDeviceId);
   const nextId = videoDevices[(i + 1) % videoDevices.length].deviceId;
   startCamera(lastVideoId, nextId);
-  log("Flipped camera.");
+  log("Camera flipped.");
 };
 
-function renderPlayer(seat, player) {
+function renderSeat(seat, player) {
   const div = document.createElement("div");
-  div.className = "player-box";
+  div.className = "player-slot";
   div.style.gridArea = seat;
 
   div.innerHTML = `
@@ -78,10 +78,9 @@ function renderPlayer(seat, player) {
       <input id="life-${seat}" value="${player.life || 40}" />
       <button onclick="adjustLife('${seat}', 1)">+</button>
     </div>
-    <input id="status-${seat}" value="${player.status || ''}" placeholder="Status..." />
+    <input class="status-bar" id="status-${seat}" value="${player.status || ''}" placeholder="Status..." />
     <button onclick="save('${seat}', '${player.name}')">Save</button>
   `;
-
   container.appendChild(div);
 
   if (player.name === displayName) {
@@ -99,23 +98,30 @@ function save(seat, name) {
   const life = parseInt(document.getElementById(`life-${seat}`).value);
   const status = document.getElementById(`status-${seat}`).value;
   update(ref(db, `rooms/${roomId}/players/${name}`), { life, status });
-  log(`Saved ${name} life: ${life}, status: ${status}`);
+  log(`Saved ${name}: life=${life}, status=${status}`);
 }
 
 onValue(ref(db, `rooms/${roomId}`), snap => {
   const data = snap.val();
-  if (!data) return log("Room not found.");
+  if (!data) return log("No room found.");
 
   const players = data.players || {};
-  const template = data.template || "commander";
   container.innerHTML = "";
 
-  const seats = ["p1", "p2", "p3", "p4"];
+  const layout = {
+    p1: "1 / 1",
+    p2: "1 / 2",
+    p3: "2 / 1",
+    p4: "2 / 2"
+  };
+  container.style.gridTemplateRows = "1fr 1fr";
+  container.style.gridTemplateColumns = "1fr 1fr";
+
   for (const pname in players) {
     const player = players[pname];
     const seat = player.seat;
-    if (seats.includes(seat)) {
-      renderPlayer(seat, player, template);
-    }
+    if (!seat) continue;
+
+    renderSeat(seat, player);
   }
 });
