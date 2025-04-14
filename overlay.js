@@ -11,132 +11,107 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
 
-const roomId = new URLSearchParams(window.location.search).get("room");
+const params = new URLSearchParams(window.location.search);
+const roomId = params.get("room");
 const displayName = localStorage.getItem("displayName") || "Unknown";
-const grid = document.getElementById("overlayGrid");
 
+const layout = document.getElementById("overlayContainer");
 let currentStream = null;
-let videoDevices = [];
+let lastVideoId = null;
 let currentDeviceId = null;
+let videoDevices = [];
 
 navigator.mediaDevices.enumerateDevices().then(devices => {
   videoDevices = devices.filter(d => d.kind === "videoinput");
 });
 
-function startCamera(videoId) {
-  const mode = localStorage.getItem("cameraFacingMode") || "user";
-  const constraints = { video: { facingMode: { exact: mode } }, audio: false };
+function flipCamera() {
+  if (videoDevices.length < 2) return;
+  const i = videoDevices.findIndex(d => d.deviceId === currentDeviceId);
+  const nextId = videoDevices[(i + 1) % videoDevices.length].deviceId;
+  startCamera(lastVideoId, nextId);
+}
+
+async function startCamera(videoId, deviceId = null) {
+  const constraints = deviceId
+    ? { video: { deviceId: { exact: deviceId } }, audio: false }
+    : { video: true, audio: false };
 
   if (currentStream) currentStream.getTracks().forEach(t => t.stop());
 
-  navigator.mediaDevices.getUserMedia(constraints).then(stream => {
-    const vid = document.getElementById(videoId);
-    if (vid) vid.srcObject = stream;
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia(constraints);
     currentStream = stream;
+    const el = document.getElementById(videoId);
+    if (el) el.srcObject = stream;
     currentDeviceId = stream.getVideoTracks()[0]?.getSettings()?.deviceId;
-  }).catch(console.error);
-}
-
-window.flipCamera = () => {
-  const mode = localStorage.getItem("cameraFacingMode");
-  localStorage.setItem("cameraFacingMode", mode === "environment" ? "user" : "environment");
-  setTimeout(() => {
-    const cam = document.querySelector("video[id^='cam-']");
-    if (cam) startCamera(cam.id);
-  }, 300);
-};
-
-function getHudPosition(seat, playerCount) {
-  const positions = {
-    p1: playerCount === 2 ? "top:8px;left:8px;" : "top:8px;left:8px;",
-    p2: playerCount === 2 ? "bottom:8px;left:8px;" : "top:8px;right:8px;",
-    p3: "bottom:8px;left:8px;",
-    p4: "bottom:8px;right:8px;"
-  };
-  return positions[seat] || "top:8px;left:8px;";
-}
-
-function createPlayerBox(seat, player, playerCount) {
-  const div = document.createElement("div");
-  div.className = "playerBox";
-
-  const video = document.createElement("video");
-  video.id = `cam-${seat}`;
-  video.autoplay = true;
-  video.playsInline = true;
-  video.muted = true;
-  div.appendChild(video);
-
-  const hud = document.createElement("div");
-  hud.className = "hud";
-  hud.style.cssText = getHudPosition(seat, playerCount);
-  hud.style.position = "absolute";
-
-  const row = document.createElement("div");
-  row.className = "hud-row";
-
-  const name = document.createElement("div");
-  name.textContent = player.name;
-  name.style.fontWeight = "bold";
-
-  const life = document.createElement("input");
-  life.type = "number";
-  life.value = player.life ?? 40;
-  life.id = `life-${seat}`;
-
-  const minus = document.createElement("button");
-  minus.textContent = "-";
-  minus.onclick = () => life.value = parseInt(life.value) - 1;
-
-  const plus = document.createElement("button");
-  plus.textContent = "+";
-  plus.onclick = () => life.value = parseInt(life.value) + 1;
-
-  row.append(name, minus, life, plus);
-  hud.appendChild(row);
-
-  const status = document.createElement("input");
-  status.type = "text";
-  status.placeholder = "Status";
-  status.value = player.status || "";
-  status.id = `stat-${seat}`;
-  hud.appendChild(status);
-
-  const save = document.createElement("button");
-  save.textContent = "Save";
-  save.onclick = () => {
-    const newLife = parseInt(document.getElementById(`life-${seat}`).value);
-    const newStatus = document.getElementById(`stat-${seat}`).value;
-    update(ref(db, `rooms/${roomId}/players/${player.name}`), {
-      life: newLife,
-      status: newStatus
-    });
-  };
-  hud.appendChild(save);
-
-  div.appendChild(hud);
-
-  if (player.name === displayName) {
-    startCamera(`cam-${seat}`);
+    console.log("Camera started for", videoId);
+  } catch (e) {
+    console.error("Camera error", e);
   }
+}
 
-  return div;
+function adjustLife(seat, delta) {
+  const el = document.getElementById(`life-${seat}`);
+  el.value = parseInt(el.value) + delta;
+}
+
+function save(seat, name) {
+  const life = parseInt(document.getElementById(`life-${seat}`).value);
+  const status = document.getElementById(`stat-${seat}`).value;
+  update(ref(db, `rooms/${roomId}/players/${name}`), { life, status });
 }
 
 onValue(ref(db, `rooms/${roomId}`), snap => {
   const data = snap.val();
   if (!data) return;
 
-  const players = Object.values(data.players || {});
-  const seats = ["p1", "p2", "p3", "p4"];
-  const active = seats.map(seat => players.find(p => p.seat === seat)).filter(Boolean);
-  const playerCount = active.length;
+  layout.innerHTML = "";
+  const playerCount = data.playerCount || 4;
+  const template = data.template || "commander";
+  const players = data.players || {};
+  const seatOrder = ["p1", "p2", "p3", "p4"];
+  const seatMap = {
+    p1: "top-left", p2: "top-right",
+    p3: "bottom-left", p4: "bottom-right"
+  };
 
-  grid.innerHTML = "";
-  grid.style.gridTemplate = playerCount === 2 ? "1fr 1fr / 1fr" : "1fr 1fr / 1fr 1fr";
+  layout.style.gridTemplateColumns = playerCount === 2 ? "1fr 1fr" : "1fr 1fr";
+  layout.style.gridTemplateRows = playerCount === 2 ? "1fr" : "1fr 1fr";
 
-  active.forEach(player => {
-    const div = createPlayerBox(player.seat, player, playerCount);
-    grid.appendChild(div);
-  });
+  for (const seat of seatOrder) {
+    const player = Object.values(players).find(p => p.seat === seat);
+    if (!player) continue;
+
+    const vid = document.createElement("video");
+    vid.id = `cam-${seat}`;
+    vid.autoplay = true;
+    vid.muted = true;
+    vid.playsInline = true;
+    layout.appendChild(vid);
+
+    if (player.name === displayName) {
+      lastVideoId = `cam-${seat}`;
+      startCamera(lastVideoId);
+    }
+
+    const corner = seatMap[seat];
+    const ui = document.createElement("div");
+    ui.className = `player-corner ${corner}`;
+    ui.innerHTML = `
+      <strong>${player.name}</strong>
+      <div>
+        <button onclick="adjustLife('${seat}', -1)">-</button>
+        <input id="life-${seat}" value="${player.life}" />
+        <button onclick="adjustLife('${seat}', 1)">+</button>
+      </div>
+      <input id="stat-${seat}" placeholder="Status..." value="${player.status || ''}" />
+      <button onclick="save('${seat}', '${player.name}')">Save</button>
+    `;
+    layout.appendChild(ui);
+  }
 });
+
+window.flipCamera = flipCamera;
+window.adjustLife = adjustLife;
+window.save = save;
