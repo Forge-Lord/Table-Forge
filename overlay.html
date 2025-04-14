@@ -16,47 +16,15 @@
       display: grid;
       width: 100vw;
       height: 100vh;
-      grid-template-columns: 1fr 1fr;
-      grid-template-rows: 1fr 1fr;
+      gap: 4px;
+      box-sizing: border-box;
     }
 
     .playerBox {
-      border: 1px solid #333;
-      padding: 8px;
-      box-sizing: border-box;
       position: relative;
-    }
-
-    .nameTag {
-      position: absolute;
-      font-weight: bold;
-      font-size: 1rem;
-      background: rgba(0, 0, 0, 0.6);
-      padding: 4px 8px;
-      top: 8px;
-      left: 8px;
-      border-radius: 4px;
-    }
-
-    .lifeRow {
-      position: absolute;
-      top: 8px;
-      right: 8px;
-      display: flex;
-      align-items: center;
-      gap: 4px;
-      background: rgba(0, 0, 0, 0.6);
-      padding: 4px 6px;
-      border-radius: 4px;
-    }
-
-    .statusBar {
-      position: absolute;
-      bottom: 8px;
-      left: 8px;
-      right: 8px;
-      display: flex;
-      gap: 4px;
+      overflow: hidden;
+      border: 2px solid #333;
+      background: #111;
     }
 
     video {
@@ -65,27 +33,54 @@
       object-fit: cover;
     }
 
-    input[type="number"] {
-      width: 50px;
+    .hud {
+      position: absolute;
+      background: rgba(0, 0, 0, 0.7);
+      padding: 6px;
+      border-radius: 6px;
       font-size: 1rem;
-      text-align: center;
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+      z-index: 2;
     }
 
-    button {
-      font-size: 1rem;
-      padding: 4px 10px;
+    .hud-row {
+      display: flex;
+      gap: 6px;
+      align-items: center;
     }
 
-    input[type="text"] {
-      flex: 1;
+    .hud input[type="number"],
+    .hud input[type="text"] {
       font-size: 1rem;
-      padding: 4px;
+      padding: 2px 6px;
+      background: #222;
+      border: 1px solid #555;
+      color: white;
+    }
+
+    .hud button {
+      font-size: 0.9rem;
+      padding: 4px 8px;
+      margin-top: 4px;
+    }
+
+    .flip-button {
+      position: absolute;
+      top: 8px;
+      right: 8px;
+      padding: 6px 12px;
+      background: #333;
+      color: white;
+      border: 1px solid #666;
+      z-index: 10;
     }
   </style>
 </head>
 <body>
+  <button class="flip-button" onclick="flipCamera()">Flip Camera</button>
   <div id="overlayGrid"></div>
-  <button onclick="flipCamera()" style="position:absolute; top:8px; right:8px; z-index:10;">Flip Camera</button>
   <script type="module" src="overlay.js"></script>
 </body>
 </html>
