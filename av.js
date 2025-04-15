@@ -14,7 +14,6 @@ const roomId = new URLSearchParams(location.search).get("room");
 const localName = localStorage.getItem("displayName");
 
 let localStream = null;
-let connections = {};
 
 async function getLocalMedia() {
   if (localStream) return localStream;
@@ -33,10 +32,10 @@ export async function setupPeer(seat, isSelf, name) {
     await set(seatRef, { online: true });
     onDisconnect(seatRef).remove();
   } else {
-    onValue(seatRef, async snap => {
+    onValue(seatRef, snap => {
       const data = snap.val();
       if (!data) return;
-      vidEl.srcObject = stream; // simplified demo — replace with WebRTC remote stream
+      vidEl.srcObject = stream; // Placeholder: local-only test logic
     });
   }
 }
