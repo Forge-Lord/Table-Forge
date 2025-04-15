@@ -1,7 +1,13 @@
-import { db, ref, onValue } from './firebasejs.js';
+import { db, ref, onValue, update } from './firebasejs.js';
 
 let localStream = null;
 let currentPlayer = null;
+let currentRoom = null;
+
+function getRoomId() {
+  const urlParams = new URLSearchParams(window.location.search);
+  return urlParams.get("room");
+}
 
 async function initCamera(facingMode = "user") {
   try {
@@ -9,19 +15,23 @@ async function initCamera(facingMode = "user") {
       video: { facingMode },
       audio: true
     });
+    return true;
   } catch (err) {
-    console.error("Camera error:", err);
+    console.error("Camera access error:", err);
+    return false;
   }
 }
 
-function assignPlayerVideo(box, name) {
+function assignVideo(box, isSelf) {
   const video = document.createElement("video");
   video.autoplay = true;
-  video.muted = true;
   video.playsInline = true;
+  video.muted = isSelf;
   video.srcObject = localStream;
+  video.style.width = "100%";
+  video.style.height = "100%";
+  video.style.objectFit = "cover";
   box.appendChild(video);
-  console.log(`Camera bound to: ${name}`);
 }
 
 function renderGrid(players) {
@@ -50,7 +60,7 @@ function renderGrid(players) {
         <input type="number" id="life-${pname}" value="${player.life}" />
         <button onclick="adjustLife('${pname}', 1)">+</button>
       </div>
-      <input id="status-${pname}" value="${player.status}" placeholder="Status..."/>
+      <input id="status-${pname}" value="${player.status}" placeholder="Status..." />
       <button onclick="saveStatus('${pname}')">Save</button>
       ${pname === currentPlayer ? `
         <button onclick="toggleMute()">Mute</button>
@@ -59,8 +69,8 @@ function renderGrid(players) {
     `;
     box.appendChild(ui);
 
-    if (pname === currentPlayer && localStream) {
-      assignPlayerVideo(box, pname);
+    if (pname === currentPlayer) {
+      assignVideo(box, true);
     }
 
     grid.appendChild(box);
@@ -75,7 +85,7 @@ window.adjustLife = (name, delta) => {
 window.saveStatus = (name) => {
   const input = document.getElementById(`status-${name}`);
   const lifeInput = document.getElementById(`life-${name}`);
-  const playerRef = ref(db, `rooms/${getRoomId()}/players/${name}`);
+  const playerRef = ref(db, `rooms/${currentRoom}/players/${name}`);
   update(playerRef, {
     status: input.value,
     life: parseInt(lifeInput.value)
@@ -83,27 +93,31 @@ window.saveStatus = (name) => {
 };
 
 window.toggleMute = () => {
-  localStream.getAudioTracks().forEach(t => t.enabled = !t.enabled);
+  if (localStream) {
+    localStream.getAudioTracks().forEach(track => {
+      track.enabled = !track.enabled;
+    });
+  }
 };
 
 window.toggleCamera = () => {
-  localStream.getVideoTracks().forEach(t => t.enabled = !t.enabled);
+  if (localStream) {
+    localStream.getVideoTracks().forEach(track => {
+      track.enabled = !track.enabled;
+    });
+  }
 };
 
-function getRoomId() {
-  const urlParams = new URLSearchParams(window.location.search);
-  return urlParams.get("room");
-}
-
 window.addEventListener("DOMContentLoaded", async () => {
-  const name = localStorage.getItem("displayName") || "Unnamed";
-  currentPlayer = name;
-  const roomId = getRoomId();
-  await initCamera(localStorage.getItem("cameraFacingMode") || "user");
+  currentRoom = getRoomId();
+  currentPlayer = localStorage.getItem("displayName") || "Unknown";
 
-  const roomRef = ref(db, `rooms/${roomId}/players`);
+  const cameraReady = await initCamera(localStorage.getItem("cameraFacingMode") || "user");
+  if (!cameraReady) return alert("Camera or mic permissions denied.");
+
+  const roomRef = ref(db, `rooms/${currentRoom}/players`);
   onValue(roomRef, (snap) => {
-    const players = snap.val();
-    if (players) renderGrid(players);
+    const data = snap.val();
+    if (data) renderGrid(data);
   });
 });
