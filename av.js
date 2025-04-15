@@ -1,4 +1,4 @@
-// ⚒️ Forge Sync AV.JS v2.5 – Robust Peer Init and Retry Logic
+// ⚒️ Forge Sync AV.JS v2.6 – Peer-safe local cam binding, visibility checks
 
 const Peer = window.Peer;
 
@@ -48,12 +48,13 @@ export async function setupAVMesh(players, me, roomId) {
   currentPlayer = me;
   currentRoom = roomId;
 
-  // Pre-bind Peer
   peer = new Peer(me);
 
   peer.on('call', call => {
     logToScreen("📞 Incoming call from: " + call.peer);
-    call.answer(localStream);
+    waitForStreamReady(() => {
+      call.answer(localStream);
+    });
     call.on('stream', remoteStream => {
       logToScreen("📡 Received remote stream from " + call.peer);
       renderRemoteStream(call.metadata?.seat || call.peer, remoteStream);
@@ -65,14 +66,16 @@ export async function setupAVMesh(players, me, roomId) {
     const playerRef = ref(db, `rooms/${roomId}/players/${me}`);
     await update(playerRef, { peerId: id });
 
-    await delay(800); // give DOM time
+    await delay(1000); // Give DOM and video elements time
     players.forEach(player => {
       if (player.name !== me && player.peerId) {
         logToScreen("📤 Calling peer: " + player.peerId);
-        const call = peer.call(player.peerId, localStream, { metadata: { seat: player.seat } });
-        call.on('stream', remoteStream => {
-          logToScreen("🎥 Got remote stream from " + player.name);
-          renderRemoteStream(player.seat, remoteStream);
+        waitForStreamReady(() => {
+          const call = peer.call(player.peerId, localStream, { metadata: { seat: player.seat } });
+          call.on('stream', remoteStream => {
+            logToScreen("🎥 Got remote stream from " + player.name);
+            renderRemoteStream(player.seat, remoteStream);
+          });
         });
       }
     });
@@ -89,12 +92,15 @@ async function initCamera(facingMode = "user") {
     logToScreen("✅ Local camera stream ready");
 
     const mySeat = guessMySeat();
-    const localVid = document.getElementById(`video-${mySeat}`);
+    const localVid = await waitForVideoElement(mySeat);
     if (localVid) {
       localVid.srcObject = localStream;
-      logToScreen("📺 Attached local cam to video-" + mySeat);
+      localVid.onloadedmetadata = () => {
+        logToScreen("📺 Local video loaded in " + mySeat);
+        localVid.play().catch(err => logToScreen("⚠️ play() failed: " + err.message));
+      };
     } else {
-      logToScreen("⚠️ video-" + mySeat + " not found for local cam");
+      logToScreen("⚠️ video-" + mySeat + " not found");
     }
   } catch (err) {
     logToScreen("🚫 Webcam error: " + err.message);
@@ -102,23 +108,27 @@ async function initCamera(facingMode = "user") {
 }
 
 function renderRemoteStream(seat, stream) {
-  const target = document.getElementById(`video-${seat}`);
-  if (!target) {
-    logToScreen(`⚠️ No video-${seat} found. Retry pending...`);
+  const vid = document.getElementById(`video-${seat}`);
+  if (!vid) {
+    logToScreen(`⚠️ No video-${seat} found. Will retry.`);
     retryAttach(seat, stream);
     return;
   }
-  target.srcObject = stream;
-  logToScreen(`🎥 Stream assigned to video-${seat}`);
+  vid.srcObject = stream;
+  vid.onloadedmetadata = () => {
+    logToScreen("🎥 Remote stream visible in video-" + seat);
+    vid.play().catch(err => logToScreen("⚠️ play() failed: " + err.message));
+  };
 }
 
 function retryAttach(seat, stream, attempt = 1) {
   if (attempt > 10) return;
   setTimeout(() => {
-    const target = document.getElementById(`video-${seat}`);
-    if (target) {
-      target.srcObject = stream;
-      logToScreen("✅ Retry worked: video-" + seat);
+    const vid = document.getElementById(`video-${seat}`);
+    if (vid) {
+      vid.srcObject = stream;
+      logToScreen("✅ Retry: attached stream to video-" + seat);
+      vid.play().catch(err => logToScreen("⚠️ play() retry failed: " + err.message));
     } else {
       retryAttach(seat, stream, attempt + 1);
     }
@@ -137,6 +147,30 @@ function guessMySeat() {
 
 function delay(ms) {
   return new Promise(res => setTimeout(res, ms));
+}
+
+function waitForVideoElement(seat, maxTries = 10) {
+  return new Promise((resolve) => {
+    let tries = 0;
+    const check = () => {
+      const el = document.getElementById(`video-${seat}`);
+      if (el) return resolve(el);
+      tries++;
+      if (tries > maxTries) return resolve(null);
+      setTimeout(check, 200);
+    };
+    check();
+  });
+}
+
+function waitForStreamReady(cb) {
+  let tries = 0;
+  const check = () => {
+    if (localStream) return cb();
+    if (tries++ > 10) return logToScreen("❌ Timed out waiting for stream");
+    setTimeout(check, 200);
+  };
+  check();
 }
 
 window.addEventListener("DOMContentLoaded", async () => {
