@@ -1,4 +1,4 @@
-// ⚒️ Forge Sync AV.JS v2.7 – Cam render fix + retry + log
+// ⚒️ Forge Sync AV.JS v2.8 – Peer-safe local cam binding, deep player scan mode
 
 const Peer = window.Peer;
 
@@ -48,6 +48,8 @@ export async function setupAVMesh(players, me, roomId) {
   currentPlayer = me;
   currentRoom = roomId;
 
+  logToScreen("🔎 Player list: " + JSON.stringify(players.map(p => ({ name: p.name, seat: p.seat, peerId: p.peerId }))));
+
   peer = new Peer(me);
 
   peer.on('call', call => {
@@ -66,18 +68,21 @@ export async function setupAVMesh(players, me, roomId) {
     const playerRef = ref(db, `rooms/${roomId}/players/${me}`);
     await update(playerRef, { peerId: id });
 
-    await delay(1000);
+    await delay(1000); // Give DOM and video elements time
     players.forEach(player => {
-      if (player.name !== me && player.peerId) {
-        logToScreen("📤 Calling peer: " + player.peerId);
-        waitForStreamReady(() => {
-          const call = peer.call(player.peerId, localStream, { metadata: { seat: player.seat } });
-          call.on('stream', remoteStream => {
-            logToScreen("🎥 Got remote stream from " + player.name);
-            renderRemoteStream(player.seat, remoteStream);
-          });
-        });
+      if (player.name === me) return;
+      if (!player.peerId) {
+        logToScreen("⚠️ Skipping " + player.name + ": missing peerId");
+        return;
       }
+      logToScreen("📤 Calling peer: " + player.peerId + " (" + player.name + ", seat: " + player.seat + ")");
+      waitForStreamReady(() => {
+        const call = peer.call(player.peerId, localStream, { metadata: { seat: player.seat } });
+        call.on('stream', remoteStream => {
+          logToScreen("🎥 Got remote stream from " + player.name);
+          renderRemoteStream(player.seat, remoteStream);
+        });
+      });
     });
   });
 }
@@ -95,36 +100,16 @@ async function initCamera(facingMode = "user") {
     const localVid = await waitForVideoElement(mySeat);
     if (localVid) {
       localVid.srcObject = localStream;
-      requestAnimationFrame(() => {
-        localVid.onloadedmetadata = () => {
-          localVid.play().then(() => {
-            logToScreen("📺 Local video successfully playing in " + mySeat);
-            showReadyMark(mySeat);
-          }).catch(err => {
-            logToScreen("⚠️ Local video play() failed: " + err.message);
-            retryPlay(localVid, mySeat);
-          });
-        };
-      });
+      localVid.onloadedmetadata = () => {
+        logToScreen("📺 Local video successfully playing in " + mySeat);
+        localVid.play().catch(err => logToScreen("⚠️ play() failed: " + err.message));
+      };
     } else {
       logToScreen("⚠️ video-" + mySeat + " not found");
     }
   } catch (err) {
     logToScreen("🚫 Webcam error: " + err.message);
   }
-}
-
-function retryPlay(videoEl, seat, attempt = 1) {
-  if (attempt > 5) return;
-  setTimeout(() => {
-    videoEl.play().then(() => {
-      logToScreen("✅ Retry succeeded: video playing in " + seat);
-      showReadyMark(seat);
-    }).catch(err => {
-      logToScreen("⚠️ Retry #" + attempt + " play() failed: " + err.message);
-      retryPlay(videoEl, seat, attempt + 1);
-    });
-  }, 500);
 }
 
 function renderRemoteStream(seat, stream) {
@@ -163,17 +148,6 @@ function guessMySeat() {
     }
   }
   return "p1";
-}
-
-function showReadyMark(seat) {
-  const target = document.getElementById("seat-" + seat);
-  if (!target) return;
-  const mark = document.createElement("span");
-  mark.innerText = " ✅";
-  mark.style.color = "lime";
-  mark.style.fontSize = "14px";
-  mark.style.marginLeft = "4px";
-  target.appendChild(mark);
 }
 
 function delay(ms) {
