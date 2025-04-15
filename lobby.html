@@ -70,11 +70,11 @@
       <option value="3">3</option>
       <option value="4">4</option>
     </select> <br />
-    <button id="createBtn">Create Room</button>
+    <button onclick="createRoom()">Create Room</button>
 
     <h3>Join Room</h3>
     <input id="roomCode" placeholder="Room Code" />
-    <button id="joinBtn">Join Room</button>
+    <button onclick="joinRoom()">Join Room</button>
   </div>
 
   <div id="lobbyView" style="display: none;">
@@ -84,7 +84,6 @@
     <button id="startGameBtn" onclick="startGame()" style="display: none; margin-top: 2em;">Start Game</button>
   </div>
 
-  <!-- Auth + logout -->
   <script type="module">
     import { requireLogin, logout } from './auth.js';
     requireLogin();
@@ -95,8 +94,6 @@
       document.getElementById("logoutBtn").addEventListener("click", logout);
     });
   </script>
-
-  <!-- Main logic -->
   <script type="module" src="script.js"></script>
 </body>
 </html>
