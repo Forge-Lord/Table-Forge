@@ -1,27 +1,32 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>Table Forge Overlay</title>
+  <title>Table Forge Overlay – Spark of Sound</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <style>
     body {
       margin: 0;
-      padding: 0;
       background: #000;
       font-family: sans-serif;
+      color: white;
       overflow: hidden;
     }
 
-    #overlayContainer {
+    #overlayGrid {
       display: grid;
       width: 100vw;
       height: 100vh;
       gap: 4px;
-      padding: 0;
-      margin: 0;
       box-sizing: border-box;
       grid-template-columns: 1fr 1fr;
       grid-template-rows: 1fr 1fr;
+    }
+
+    .player-box {
+      position: relative;
+      overflow: hidden;
+      border: 2px solid #333;
+      background: #111;
     }
 
     video {
@@ -31,51 +36,44 @@
       background: #000;
     }
 
-    .player-corner {
+    .player-ui {
       position: absolute;
-      color: white;
-      font-family: sans-serif;
-      font-size: 18px;
-      text-shadow: 1px 1px 4px #000;
+      background: rgba(0, 0, 0, 0.65);
+      padding: 6px;
+      border-radius: 6px;
+      font-size: 14px;
       display: flex;
       flex-direction: column;
-      align-items: flex-start;
-      background: rgba(0, 0, 0, 0.6);
-      border-radius: 8px;
-      padding: 4px 8px;
+      z-index: 10;
     }
 
-    .top-left    { top: 8px; left: 8px; }
-    .top-right   { top: 8px; right: 8px; align-items: flex-end; }
-    .bottom-left { bottom: 8px; left: 8px; }
-    .bottom-right{ bottom: 8px; right: 8px; align-items: flex-end; }
+    .top-left { top: 8px; left: 8px; align-items: flex-start; }
+    .top-right { top: 8px; right: 8px; align-items: flex-end; }
+    .bottom-left { bottom: 8px; left: 8px; align-items: flex-start; }
+    .bottom-right { bottom: 8px; right: 8px; align-items: flex-end; }
 
-    .player-corner input {
-      font-size: 16px;
-      margin-top: 4px;
-      padding: 2px 6px;
+    .player-ui input {
+      margin: 4px 0;
+      padding: 4px;
+      font-size: 14px;
+      background: #222;
+      color: white;
       border: none;
       border-radius: 4px;
       width: 60px;
     }
 
-    .player-corner button {
+    .player-ui button {
       margin-top: 4px;
-      padding: 4px 8px;
-      font-size: 14px;
-    }
-
-    #flipBtn {
-      position: absolute;
-      top: 8px;
-      right: 8px;
-      z-index: 10;
+      padding: 4px 6px;
+      font-size: 12px;
+      cursor: pointer;
     }
   </style>
 </head>
 <body>
-  <button id="flipBtn" onclick="flipCamera()">Flip Camera</button>
-  <div id="overlayContainer"></div>
+  <div id="overlayGrid"></div>
   <script type="module" src="overlay.js"></script>
+  <script type="module" src="av.js"></script>
 </body>
 </html>
