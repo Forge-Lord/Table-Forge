@@ -1,4 +1,7 @@
-import Peer from 'https://cdn.skypack.dev/peerjs';
+// ✅ av.js – Browser-safe with PeerJS global + Firebase CDN inline
+
+const Peer = window.Peer;
+
 import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-app.js";
 import {
   getDatabase,
@@ -38,7 +41,7 @@ export async function setupAVMesh(players, me, roomId) {
   peer.on('call', call => {
     call.answer(localStream);
     call.on('stream', remoteStream => {
-      renderRemoteStream(call.metadata.seat, remoteStream);
+      renderRemoteStream(call.metadata?.seat || call.peer, remoteStream);
     });
   });
 
