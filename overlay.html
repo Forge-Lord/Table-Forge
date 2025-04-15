@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>Table Forge Overlay – Spark of Sound</title>
+  <title>Table Forge Overlay</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <style>
     body {
@@ -18,8 +18,6 @@
       height: 100vh;
       gap: 4px;
       box-sizing: border-box;
-      grid-template-columns: 1fr 1fr;
-      grid-template-rows: 1fr 1fr;
     }
 
     .player-box {
@@ -47,9 +45,9 @@
       z-index: 10;
     }
 
-    .top-left { top: 8px; left: 8px; align-items: flex-start; }
+    .top-left { top: 8px; left: 8px; }
     .top-right { top: 8px; right: 8px; align-items: flex-end; }
-    .bottom-left { bottom: 8px; left: 8px; align-items: flex-start; }
+    .bottom-left { bottom: 8px; left: 8px; }
     .bottom-right { bottom: 8px; right: 8px; align-items: flex-end; }
 
     .player-ui input {
