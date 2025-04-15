@@ -1,7 +1,21 @@
-// av.js – Forge Spirit WebRTC Sync using PeerJS
-
-import { db, ref, update } from './firebasejs.js';
 import Peer from 'https://cdn.skypack.dev/peerjs';
+import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-app.js";
+import {
+  getDatabase,
+  ref,
+  update,
+  onValue
+} from "https://www.gstatic.com/firebasejs/9.22.1/firebase-database.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyBzvVpMCdg3Y6i5vCGWarorcTmzBzjmPow",
+  authDomain: "tableforge-app.firebaseapp.com",
+  projectId: "tableforge-app",
+  databaseURL: "https://tableforge-app-default-rtdb.firebaseio.com"
+};
+
+const app = initializeApp(firebaseConfig);
+const db = getDatabase(app);
 
 let localStream = null;
 let currentPlayer = null;
@@ -9,9 +23,11 @@ let currentRoom = null;
 let peer = null;
 
 export async function setupAVMesh(players, me, roomId) {
+  console.log("🚀 setupAVMesh called", { players, me, roomId });
+
   currentPlayer = me;
   currentRoom = roomId;
-  
+
   peer = new Peer(me);
 
   peer.on('open', id => {
@@ -22,13 +38,13 @@ export async function setupAVMesh(players, me, roomId) {
   peer.on('call', call => {
     call.answer(localStream);
     call.on('stream', remoteStream => {
-      renderRemoteStream(call.peer, remoteStream);
+      renderRemoteStream(call.metadata.seat, remoteStream);
     });
   });
 
   players.forEach(player => {
     if (player.name !== me && player.peerId) {
-      const call = peer.call(player.peerId, localStream);
+      const call = peer.call(player.peerId, localStream, { metadata: { seat: player.seat } });
       call.on('stream', remoteStream => {
         renderRemoteStream(player.seat, remoteStream);
       });
