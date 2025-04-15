@@ -57,7 +57,6 @@
 
   <div id="preGame" style="display: block;">
     <h3>Create Room</h3>
-    <input id="name" placeholder="Your Name" /> <br />
     <input id="roomName" placeholder="Room Name (Optional)" /> <br />
     <label>Choose Template:</label>
     <select id="template">
@@ -74,7 +73,6 @@
     <button onclick="createRoom()">Create Room</button>
 
     <h3>Join Room</h3>
-    <input id="joinName" placeholder="Your Name" /> <br />
     <input id="roomCode" placeholder="Room Code" />
     <button onclick="joinRoom()">Join Room</button>
   </div>
@@ -92,13 +90,9 @@
     requireLogin();
 
     document.addEventListener("DOMContentLoaded", () => {
+      const name = localStorage.getItem("displayName") || "Unknown";
+      document.getElementById("profileName").textContent = name;
       document.getElementById("logoutBtn").addEventListener("click", logout);
-      const name = localStorage.getItem("displayName");
-      if (name) {
-        document.getElementById("profileName").textContent = name;
-        document.getElementById("name").value = name;
-        document.getElementById("joinName").value = name;
-      }
     });
   </script>
 
