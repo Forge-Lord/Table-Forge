@@ -1,4 +1,4 @@
-// ✅ FINAL av.js – Self-cam auto-seat detection + debug + mesh
+// ✅ FINAL av.js – Auto seat, peer sync delay, debug logs, self-cam preview
 
 const Peer = window.Peer;
 
@@ -33,10 +33,13 @@ export async function setupAVMesh(players, me, roomId) {
 
   peer = new Peer(me);
 
-  peer.on('open', id => {
-    console.log("🔑 Peer ID created:", id);
-    const playerRef = ref(db, `rooms/${roomId}/players/${me}`);
-    update(playerRef, { peerId: id });
+  await new Promise(resolve => {
+    peer.on('open', id => {
+      console.log("🔑 Peer ID created:", id);
+      const playerRef = ref(db, `rooms/${roomId}/players/${me}`);
+      update(playerRef, { peerId: id });
+      resolve();
+    });
   });
 
   peer.on('call', call => {
@@ -68,7 +71,7 @@ async function initCamera(facingMode = "user") {
     });
     console.log("📷 Camera stream acquired:", localStream);
 
-    // 🪞 Show own video in correct seat based on player name match
+    // 🪞 Auto-detect own seat
     const mySeat = (() => {
       const boxes = document.querySelectorAll('[id^="seat-"]');
       for (const box of boxes) {
