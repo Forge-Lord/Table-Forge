@@ -1,4 +1,4 @@
-// ✅ FINAL av.js – Auto seat, peer sync delay, debug logs, self-cam preview
+// ✅ FINAL av.js – with visual fallback logs on-screen for mobile debugging
 
 const Peer = window.Peer;
 
@@ -25,8 +25,25 @@ let currentPlayer = null;
 let currentRoom = null;
 let peer = null;
 
+function logToScreen(msg) {
+  console.log(msg);
+  const el = document.createElement("pre");
+  el.style.position = "fixed";
+  el.style.bottom = "0";
+  el.style.left = "0";
+  el.style.width = "100vw";
+  el.style.maxHeight = "50vh";
+  el.style.overflow = "auto";
+  el.style.background = "rgba(0,0,0,0.8)";
+  el.style.color = "lime";
+  el.style.fontSize = "10px";
+  el.style.zIndex = "9999";
+  el.innerText = msg;
+  document.body.appendChild(el);
+}
+
 export async function setupAVMesh(players, me, roomId) {
-  console.log("🚀 setupAVMesh called", { players, me, roomId });
+  logToScreen("🚀 setupAVMesh called for " + me);
 
   currentPlayer = me;
   currentRoom = roomId;
@@ -35,7 +52,7 @@ export async function setupAVMesh(players, me, roomId) {
 
   await new Promise(resolve => {
     peer.on('open', id => {
-      console.log("🔑 Peer ID created:", id);
+      logToScreen("🔑 Peer ID created: " + id);
       const playerRef = ref(db, `rooms/${roomId}/players/${me}`);
       update(playerRef, { peerId: id });
       resolve();
@@ -43,20 +60,20 @@ export async function setupAVMesh(players, me, roomId) {
   });
 
   peer.on('call', call => {
-    console.log("📞 Incoming call from:", call.peer);
+    logToScreen("📞 Incoming call from: " + call.peer);
     call.answer(localStream);
     call.on('stream', remoteStream => {
-      console.log("📡 Receiving remote stream:", remoteStream);
+      logToScreen("📡 Receiving remote stream from " + call.peer);
       renderRemoteStream(call.metadata?.seat || call.peer, remoteStream);
     });
   });
 
   players.forEach(player => {
     if (player.name !== me && player.peerId) {
-      console.log("📤 Calling peer:", player.peerId);
+      logToScreen("📤 Calling peer: " + player.peerId);
       const call = peer.call(player.peerId, localStream, { metadata: { seat: player.seat } });
       call.on('stream', remoteStream => {
-        console.log("🎥 Stream from", player.name, "at seat", player.seat, remoteStream);
+        logToScreen("🎥 Stream from " + player.name + " at seat " + player.seat);
         renderRemoteStream(player.seat, remoteStream);
       });
     }
@@ -69,9 +86,8 @@ async function initCamera(facingMode = "user") {
       video: { facingMode },
       audio: true
     });
-    console.log("📷 Camera stream acquired:", localStream);
+    logToScreen("📷 Camera stream acquired");
 
-    // 🪞 Auto-detect own seat
     const mySeat = (() => {
       const boxes = document.querySelectorAll('[id^="seat-"]');
       for (const box of boxes) {
@@ -84,23 +100,23 @@ async function initCamera(facingMode = "user") {
 
     const localVid = document.getElementById(`video-${mySeat}`);
     if (localVid) {
-      console.log(`🎥 Showing local cam in ${mySeat}`);
+      logToScreen("🎥 Showing local cam in " + mySeat);
       localVid.srcObject = localStream;
     } else {
-      console.warn("⚠️ Could not find local video element for:", mySeat);
+      logToScreen("⚠️ Could not find local video element for: " + mySeat);
     }
   } catch (err) {
-    console.error("🚫 Camera access error:", err);
+    logToScreen("🚫 Camera access error: " + err);
   }
 }
 
 function renderRemoteStream(seat, stream) {
   const vid = document.getElementById(`video-${seat}`);
   if (!vid) {
-    console.warn(`⚠️ No video element found for seat ${seat}`);
+    logToScreen(`⚠️ No video element found for seat ${seat}`);
     return;
   }
-  console.log(`🎥 Attaching stream to video-${seat}`, stream);
+  logToScreen(`🎥 Attaching stream to video-${seat}`);
   vid.srcObject = stream;
 }
 
@@ -108,5 +124,5 @@ window.addEventListener("DOMContentLoaded", async () => {
   currentRoom = new URLSearchParams(location.search).get("room");
   currentPlayer = localStorage.getItem("displayName") || "Unknown";
   await initCamera(localStorage.getItem("cameraFacingMode") || "user");
-  console.log("🧠 DOM Ready — Player:", currentPlayer, "Room:", currentRoom);
+  logToScreen("🧠 DOM Ready — Player: " + currentPlayer + " Room: " + currentRoom);
 });
