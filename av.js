@@ -1,4 +1,4 @@
-// ✅ FINAL av.js – with visual fallback logs on-screen for mobile debugging
+// 🔥 FULL DEBUG av.js – every step logged visually and in console
 
 const Peer = window.Peer;
 
@@ -34,17 +34,17 @@ function logToScreen(msg) {
   el.style.width = "100vw";
   el.style.maxHeight = "50vh";
   el.style.overflow = "auto";
-  el.style.background = "rgba(0,0,0,0.8)";
+  el.style.background = "rgba(0,0,0,0.85)";
   el.style.color = "lime";
-  el.style.fontSize = "10px";
+  el.style.fontSize = "11px";
   el.style.zIndex = "9999";
+  el.style.margin = "0";
   el.innerText = msg;
   document.body.appendChild(el);
 }
 
 export async function setupAVMesh(players, me, roomId) {
   logToScreen("🚀 setupAVMesh called for " + me);
-
   currentPlayer = me;
   currentRoom = roomId;
 
@@ -69,11 +69,15 @@ export async function setupAVMesh(players, me, roomId) {
   });
 
   players.forEach(player => {
-    if (player.name !== me && player.peerId) {
+    if (player.name !== me) {
+      if (!player.peerId) {
+        logToScreen("❌ Skipping call to " + player.name + " – no peerId yet");
+        return;
+      }
       logToScreen("📤 Calling peer: " + player.peerId);
       const call = peer.call(player.peerId, localStream, { metadata: { seat: player.seat } });
       call.on('stream', remoteStream => {
-        logToScreen("🎥 Stream from " + player.name + " at seat " + player.seat);
+        logToScreen("🎥 Received stream from " + player.name + " at seat " + player.seat);
         renderRemoteStream(player.seat, remoteStream);
       });
     }
@@ -82,11 +86,12 @@ export async function setupAVMesh(players, me, roomId) {
 
 async function initCamera(facingMode = "user") {
   try {
+    logToScreen("📷 Attempting to get user media...");
     localStream = await navigator.mediaDevices.getUserMedia({
       video: { facingMode },
       audio: true
     });
-    logToScreen("📷 Camera stream acquired");
+    logToScreen("✅ Camera stream acquired");
 
     const mySeat = (() => {
       const boxes = document.querySelectorAll('[id^="seat-"]');
@@ -103,10 +108,10 @@ async function initCamera(facingMode = "user") {
       logToScreen("🎥 Showing local cam in " + mySeat);
       localVid.srcObject = localStream;
     } else {
-      logToScreen("⚠️ Could not find local video element for: " + mySeat);
+      logToScreen("⚠️ No local video element for " + mySeat);
     }
   } catch (err) {
-    logToScreen("🚫 Camera access error: " + err);
+    logToScreen("🚫 Camera error: " + err.message);
   }
 }
 
@@ -116,13 +121,13 @@ function renderRemoteStream(seat, stream) {
     logToScreen(`⚠️ No video element found for seat ${seat}`);
     return;
   }
-  logToScreen(`🎥 Attaching stream to video-${seat}`);
+  logToScreen(`🎥 Attaching remote stream to video-${seat}`);
   vid.srcObject = stream;
 }
 
 window.addEventListener("DOMContentLoaded", async () => {
   currentRoom = new URLSearchParams(location.search).get("room");
   currentPlayer = localStorage.getItem("displayName") || "Unknown";
+  logToScreen("🧠 DOM ready for " + currentPlayer + " in room " + currentRoom);
   await initCamera(localStorage.getItem("cameraFacingMode") || "user");
-  logToScreen("🧠 DOM Ready — Player: " + currentPlayer + " Room: " + currentRoom);
 });
