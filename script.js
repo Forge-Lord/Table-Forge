@@ -20,12 +20,11 @@ function makeCode(length = 5) {
 }
 
 async function createRoom() {
-  const localName = localStorage.getItem("displayName");
-  const nameInput = document.getElementById("name");
-  const name = localName || (nameInput ? nameInput.value.trim() : "");
-  if (!name) return alert("Please enter your name");
-
-  localStorage.setItem("displayName", name);
+  const name = localStorage.getItem("displayName");
+  if (!name) {
+    alert("You must be signed in to create a room.");
+    return window.location.href = "/profile.html";
+  }
 
   const roomName = document.getElementById("roomName").value.trim();
   const template = document.getElementById("template").value;
@@ -55,10 +54,9 @@ async function createRoom() {
 }
 
 async function joinRoom() {
-  const name = localStorage.getItem("displayName") || document.getElementById("joinName")?.value?.trim();
+  const name = localStorage.getItem("displayName") || "Unknown";
   const code = document.getElementById("roomCode").value.trim();
-  if (!name || !code) return alert("Please enter name and room code");
-  localStorage.setItem("displayName", name);
+  if (!code) return alert("Please enter a room code");
 
   const roomId = code.startsWith("room-") ? code : `room-${code}`;
   joinLobby(roomId);
@@ -125,7 +123,7 @@ function flipCamera() {
   localStorage.setItem("cameraFacingMode", current === "user" ? "environment" : "user");
 }
 
-// Bind to window (for mobile)
+// Make functions accessible globally
 window.createRoom = createRoom;
 window.joinRoom = joinRoom;
 window.startGame = startGame;
