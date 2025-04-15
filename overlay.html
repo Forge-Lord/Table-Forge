@@ -85,6 +85,12 @@
 <body>
   <div id="overlayGrid"></div>
 
+  <!-- Guard Access -->
+  <script type="module">
+    import { requireLogin } from './auth.js';
+    requireLogin();
+  </script>
+
   <!-- Core Overlay Logic -->
   <script type="module" src="overlay.js"></script>
 
