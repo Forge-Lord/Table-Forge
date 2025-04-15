@@ -30,6 +30,7 @@ function makeCode(length = 5) {
 }
 
 async function createRoom() {
+  console.log("🧪 createRoom called");
   const name = localStorage.getItem("displayName");
   if (!name) {
     alert("You must be signed in to create a room.");
@@ -142,8 +143,14 @@ function flipCamera() {
   );
 }
 
-// ✅ Ensure global access
+// Ensure mobile scope
 window.createRoom = createRoom;
 window.joinRoom = joinRoom;
 window.startGame = startGame;
 window.flipCamera = flipCamera;
+
+// Add fallback click listeners (for some mobile bugs)
+document.addEventListener("DOMContentLoaded", () => {
+  document.getElementById("createBtn")?.addEventListener("click", createRoom);
+  document.getElementById("joinBtn")?.addEventListener("click", joinRoom);
+});
