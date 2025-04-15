@@ -1,6 +1,11 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-app.js";
-import { getDatabase, ref, onValue, update } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-database.js";
-import { setupPeer } from "./av.js";
+import {
+  getDatabase,
+  ref,
+  onValue,
+  update
+} from "https://www.gstatic.com/firebasejs/9.22.0/firebase-database.js";
+import { setupAVMesh } from "./av.js";
 
 const firebaseConfig = {
   apiKey: "AIzaSyBzvVpMCdg3Y6i5vCGWarorcTmzBzjmPow",
@@ -24,16 +29,12 @@ onValue(ref(db, `rooms/${roomId}`), snap => {
   layout.innerHTML = "";
   const players = data.players || {};
   const template = data.template || "commander";
-  const playerCount = parseInt(data.playerCount) || 4;
+  const playerCount = Object.keys(players).length;
 
-  layout.style.gridTemplate = playerCount === 2
-    ? "1fr / 1fr"
-    : "1fr 1fr / 1fr 1fr";
+  layout.style.gridTemplate = playerCount === 2 ? "1fr / 1fr" : "1fr 1fr / 1fr 1fr";
 
   Object.values(players).forEach(player => {
     const seat = player.seat;
-    const corner = seatMap[seat] || "top-left";
-
     const box = document.createElement("div");
     box.className = "player-box";
     box.id = `seat-${seat}`;
@@ -42,11 +43,10 @@ onValue(ref(db, `rooms/${roomId}`), snap => {
     vid.id = `video-${seat}`;
     vid.autoplay = true;
     vid.playsInline = true;
-    vid.muted = player.name === displayName;
     box.appendChild(vid);
 
     const ui = document.createElement("div");
-    ui.className = `player-ui ${corner}`;
+    ui.className = `player-ui ${seatMap[seat]}`;
     ui.innerHTML = `
       <strong>${player.name}</strong>
       <div>
@@ -54,21 +54,18 @@ onValue(ref(db, `rooms/${roomId}`), snap => {
         <input id="life-${seat}" value="${player.life}" />
         <button onclick="adjustLife('${seat}', 1)">+</button>
       </div>
-      ${template === "commander"
-        ? `<input id="stat-${seat}" value="${player.status || ''}" placeholder="Status..." />`
-        : `<input id="stat-${seat}" value="${player.status || ''}" placeholder="Turn?" />`
-      }
+      <input id="stat-${seat}" value="${player.status || ''}" placeholder="Status..." />
       ${player.name === displayName ? `
-        <button onclick="toggleMic()">Mute Mic</button>
+        <button onclick="toggleMic()">Mute</button>
         <button onclick="toggleCam()">Toggle Cam</button>
       ` : ""}
       <button onclick="save('${seat}', '${player.name}', '${template}')">Save</button>
     `;
     box.appendChild(ui);
     layout.appendChild(box);
-
-    setupPeer(seat, player.name === displayName, player.name);
   });
+
+  setupAVMesh(Object.values(players), displayName, roomId);
 });
 
 window.adjustLife = (seat, delta) => {
