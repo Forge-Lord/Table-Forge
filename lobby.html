@@ -38,12 +38,19 @@
       right: 12px;
       font-size: 14px;
       color: #ccc;
+      text-align: right;
+    }
+    #logoutBtn {
+      margin-top: 4px;
+      font-size: 12px;
+      padding: 4px 8px;
     }
   </style>
 </head>
 <body>
   <div id="top-right">
-    Logged in as: <span id="profileName" style="color: white; font-weight: bold;"></span>
+    Logged in as: <span id="profileName" style="color: white; font-weight: bold;"></span><br />
+    <button id="logoutBtn">Logout</button>
   </div>
 
   <h1>Create or Join a Room</h1>
@@ -79,21 +86,24 @@
     <button id="startGameBtn" onclick="startGame()" style="display: none; margin-top: 2em;">Start Game</button>
   </div>
 
-  <!-- Load logic -->
+  <!-- Login enforcement + logout control -->
+  <script type="module">
+    import { requireLogin, logout } from './auth.js';
+    requireLogin();
+
+    document.addEventListener("DOMContentLoaded", () => {
+      document.getElementById("logoutBtn").addEventListener("click", logout);
+      const name = localStorage.getItem("displayName");
+      if (name) {
+        document.getElementById("profileName").textContent = name;
+        document.getElementById("name").value = name;
+        document.getElementById("joinName").value = name;
+      }
+    });
+  </script>
+
+  <!-- Main logic -->
   <script type="module" src="script.js"></script>
   <script type="module" src="nav.js"></script>
-
-  <!-- Guard access -->
-  <script>
-    const user = localStorage.getItem("displayName");
-    if (!user) {
-      alert("🚫 You must register before entering the lobby.");
-      window.location.href = "/profile.html";
-    } else {
-      document.getElementById("profileName").textContent = user;
-      document.getElementById("name").value = user;
-      document.getElementById("joinName").value = user;
-    }
-  </script>
 </body>
 </html>
