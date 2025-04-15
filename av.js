@@ -1,53 +1,41 @@
-import { getDatabase, ref, onDisconnect, set, onValue } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-database.js";
-import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-app.js";
-
-const firebaseConfig = {
-  apiKey: "AIzaSyBzvVpMCdg3Y6i5vCGWarorcTmzBzjmPow",
-  authDomain: "tableforge-app.firebaseapp.com",
-  projectId: "tableforge-app",
-  databaseURL: "https://tableforge-app-default-rtdb.firebaseio.com"
-};
-
-const app = initializeApp(firebaseConfig);
-const db = getDatabase(app);
-const roomId = new URLSearchParams(location.search).get("room");
-const localName = localStorage.getItem("displayName");
-
+const peers = {};
 let localStream = null;
 
-async function getLocalMedia() {
+async function getLocalStream() {
   if (localStream) return localStream;
-  const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
-  localStream = stream;
-  return stream;
+  localStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+  return localStream;
 }
 
-export async function setupPeer(seat, isSelf, name) {
-  const stream = await getLocalMedia();
-  const seatRef = ref(db, `rooms/${roomId}/streams/${name}`);
-  const vidEl = document.getElementById(`video-${seat}`);
+export async function setupAVMesh(players, currentName, roomId) {
+  const stream = await getLocalStream();
 
-  if (isSelf) {
-    vidEl.srcObject = stream;
-    await set(seatRef, { online: true });
-    onDisconnect(seatRef).remove();
-  } else {
-    onValue(seatRef, snap => {
-      const data = snap.val();
-      if (!data) return;
-      vidEl.srcObject = stream; // Placeholder: local-only test logic
-    });
-  }
+  players.forEach(player => {
+    const seat = player.seat;
+    const name = player.name;
+    const videoEl = document.getElementById(`video-${seat}`);
+    if (!videoEl) return;
+
+    if (name === currentName) {
+      videoEl.srcObject = stream;
+    } else {
+      if (!peers[name]) {
+        // Simulate remote stream for now (will be replaced by true WebRTC soon)
+        videoEl.srcObject = stream;
+        peers[name] = true;
+      }
+    }
+  });
 }
 
 window.toggleMic = () => {
   if (!localStream) return;
   const audioTrack = localStream.getAudioTracks()[0];
-  audioTrack.enabled = !audioTrack.enabled;
+  if (audioTrack) audioTrack.enabled = !audioTrack.enabled;
 };
 
 window.toggleCam = () => {
   if (!localStream) return;
   const videoTrack = localStream.getVideoTracks()[0];
-  videoTrack.enabled = !videoTrack.enabled;
+  if (videoTrack) videoTrack.enabled = !videoTrack.enabled;
 };
