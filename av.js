@@ -1,4 +1,4 @@
-// 🔥 FULL DEBUG av.js – every step logged visually and in console
+// ⚒️ Forge Sync AV.JS v2.5 – Robust Peer Init and Retry Logic
 
 const Peer = window.Peer;
 
@@ -44,90 +44,104 @@ function logToScreen(msg) {
 }
 
 export async function setupAVMesh(players, me, roomId) {
-  logToScreen("🚀 setupAVMesh called for " + me);
+  logToScreen("🛠️ setupAVMesh called for " + me);
   currentPlayer = me;
   currentRoom = roomId;
 
+  // Pre-bind Peer
   peer = new Peer(me);
-
-  await new Promise(resolve => {
-    peer.on('open', id => {
-      logToScreen("🔑 Peer ID created: " + id);
-      const playerRef = ref(db, `rooms/${roomId}/players/${me}`);
-      update(playerRef, { peerId: id });
-      resolve();
-    });
-  });
 
   peer.on('call', call => {
     logToScreen("📞 Incoming call from: " + call.peer);
     call.answer(localStream);
     call.on('stream', remoteStream => {
-      logToScreen("📡 Receiving remote stream from " + call.peer);
+      logToScreen("📡 Received remote stream from " + call.peer);
       renderRemoteStream(call.metadata?.seat || call.peer, remoteStream);
     });
   });
 
-  players.forEach(player => {
-    if (player.name !== me) {
-      if (!player.peerId) {
-        logToScreen("❌ Skipping call to " + player.name + " – no peerId yet");
-        return;
+  peer.on('open', async id => {
+    logToScreen("🔑 Peer ID created: " + id);
+    const playerRef = ref(db, `rooms/${roomId}/players/${me}`);
+    await update(playerRef, { peerId: id });
+
+    await delay(800); // give DOM time
+    players.forEach(player => {
+      if (player.name !== me && player.peerId) {
+        logToScreen("📤 Calling peer: " + player.peerId);
+        const call = peer.call(player.peerId, localStream, { metadata: { seat: player.seat } });
+        call.on('stream', remoteStream => {
+          logToScreen("🎥 Got remote stream from " + player.name);
+          renderRemoteStream(player.seat, remoteStream);
+        });
       }
-      logToScreen("📤 Calling peer: " + player.peerId);
-      const call = peer.call(player.peerId, localStream, { metadata: { seat: player.seat } });
-      call.on('stream', remoteStream => {
-        logToScreen("🎥 Received stream from " + player.name + " at seat " + player.seat);
-        renderRemoteStream(player.seat, remoteStream);
-      });
-    }
+    });
   });
 }
 
 async function initCamera(facingMode = "user") {
   try {
-    logToScreen("📷 Attempting to get user media...");
+    logToScreen("📷 Attempting to access webcam...");
     localStream = await navigator.mediaDevices.getUserMedia({
       video: { facingMode },
       audio: true
     });
-    logToScreen("✅ Camera stream acquired");
+    logToScreen("✅ Local camera stream ready");
 
-    const mySeat = (() => {
-      const boxes = document.querySelectorAll('[id^="seat-"]');
-      for (const box of boxes) {
-        if (box.innerHTML.includes(currentPlayer)) {
-          return box.id.replace("seat-", "");
-        }
-      }
-      return "p1";
-    })();
-
+    const mySeat = guessMySeat();
     const localVid = document.getElementById(`video-${mySeat}`);
     if (localVid) {
-      logToScreen("🎥 Showing local cam in " + mySeat);
       localVid.srcObject = localStream;
+      logToScreen("📺 Attached local cam to video-" + mySeat);
     } else {
-      logToScreen("⚠️ No local video element for " + mySeat);
+      logToScreen("⚠️ video-" + mySeat + " not found for local cam");
     }
   } catch (err) {
-    logToScreen("🚫 Camera error: " + err.message);
+    logToScreen("🚫 Webcam error: " + err.message);
   }
 }
 
 function renderRemoteStream(seat, stream) {
-  const vid = document.getElementById(`video-${seat}`);
-  if (!vid) {
-    logToScreen(`⚠️ No video element found for seat ${seat}`);
+  const target = document.getElementById(`video-${seat}`);
+  if (!target) {
+    logToScreen(`⚠️ No video-${seat} found. Retry pending...`);
+    retryAttach(seat, stream);
     return;
   }
-  logToScreen(`🎥 Attaching remote stream to video-${seat}`);
-  vid.srcObject = stream;
+  target.srcObject = stream;
+  logToScreen(`🎥 Stream assigned to video-${seat}`);
+}
+
+function retryAttach(seat, stream, attempt = 1) {
+  if (attempt > 10) return;
+  setTimeout(() => {
+    const target = document.getElementById(`video-${seat}`);
+    if (target) {
+      target.srcObject = stream;
+      logToScreen("✅ Retry worked: video-" + seat);
+    } else {
+      retryAttach(seat, stream, attempt + 1);
+    }
+  }, 300);
+}
+
+function guessMySeat() {
+  const boxes = document.querySelectorAll('[id^="seat-"]');
+  for (const box of boxes) {
+    if (box.innerHTML.includes(currentPlayer)) {
+      return box.id.replace("seat-", "");
+    }
+  }
+  return "p1";
+}
+
+function delay(ms) {
+  return new Promise(res => setTimeout(res, ms));
 }
 
 window.addEventListener("DOMContentLoaded", async () => {
   currentRoom = new URLSearchParams(location.search).get("room");
   currentPlayer = localStorage.getItem("displayName") || "Unknown";
-  logToScreen("🧠 DOM ready for " + currentPlayer + " in room " + currentRoom);
+  logToScreen("🌐 DOM Ready – " + currentPlayer + " in room " + currentRoom);
   await initCamera(localStorage.getItem("cameraFacingMode") || "user");
 });
