@@ -20,12 +20,11 @@ function makeCode(length = 5) {
 }
 
 window.createRoom = async function () {
-  const name = document.getElementById("name").value.trim();
+  const name = localStorage.getItem("displayName") || "Unknown";
   const roomName = document.getElementById("roomName").value.trim();
   const template = document.getElementById("template").value;
   const playerCount = parseInt(document.getElementById("playerCount").value);
-  if (!name) return alert("Please enter your name");
-  localStorage.setItem("displayName", name);
+  if (!name) return alert("You must be logged in");
 
   const roomId = "room-" + makeCode();
   const roomRef = ref(db, `rooms/${roomId}`);
@@ -52,10 +51,9 @@ window.createRoom = async function () {
 };
 
 window.joinRoom = async function () {
-  const name = document.getElementById("joinName").value.trim();
+  const name = localStorage.getItem("displayName") || "Unknown";
   const code = document.getElementById("roomCode").value.trim();
-  if (!name || !code) return alert("Please enter name and room code");
-  localStorage.setItem("displayName", name);
+  if (!code) return alert("Please enter a room code");
 
   const roomId = code.startsWith("room-") ? code : `room-${code}`;
   joinLobby(roomId);
@@ -63,7 +61,7 @@ window.joinRoom = async function () {
 
 function joinLobby(roomId) {
   currentRoom = roomId;
-  currentName = localStorage.getItem("displayName") || "";
+  currentName = localStorage.getItem("displayName") || "Unknown";
 
   document.getElementById("preGame").style.display = "none";
   document.getElementById("lobbyView").style.display = "block";
