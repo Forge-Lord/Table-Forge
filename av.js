@@ -1,4 +1,4 @@
-// ⚒️ Forge Sync AV.JS v2.6 – Peer-safe local cam binding, visibility checks
+// ⚒️ Forge Sync AV.JS v2.7 – Peer-safe local cam binding, visibility checks, fallback-proof
 
 const Peer = window.Peer;
 
@@ -6,8 +6,7 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.1/firebas
 import {
   getDatabase,
   ref,
-  update,
-  onValue
+  update
 } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-database.js";
 
 const firebaseConfig = {
@@ -66,16 +65,29 @@ export async function setupAVMesh(players, me, roomId) {
     const playerRef = ref(db, `rooms/${roomId}/players/${me}`);
     await update(playerRef, { peerId: id });
 
-    await delay(1000); // Give DOM and video elements time
+    await delay(1000);
     players.forEach(player => {
       if (player.name !== me && player.peerId) {
         logToScreen("📤 Calling peer: " + player.peerId);
         waitForStreamReady(() => {
-          const call = peer.call(player.peerId, localStream, { metadata: { seat: player.seat } });
-          call.on('stream', remoteStream => {
-            logToScreen("🎥 Got remote stream from " + player.name);
-            renderRemoteStream(player.seat, remoteStream);
-          });
+          try {
+            const call = peer.call(player.peerId, localStream, {
+              metadata: { seat: player.seat }
+            });
+            if (!call) {
+              logToScreen(`⚠️ No call returned for ${player.name}`);
+              return;
+            }
+            call.on('stream', remoteStream => {
+              logToScreen("🎥 Got remote stream from " + player.name);
+              renderRemoteStream(player.seat, remoteStream);
+            });
+            call.on('error', err => {
+              logToScreen("🚫 Error from call to " + player.name + ": " + err.message);
+            });
+          } catch (err) {
+            logToScreen(`❌ Exception calling ${player.name}: ${err.message}`);
+          }
         });
       }
     });
