@@ -1,4 +1,4 @@
-// ✅ DEBUG av.js – with PeerJS global + Firebase CDN + logging
+// ✅ FINAL av.js – Self-cam preview + debug + mesh
 
 const Peer = window.Peer;
 
@@ -67,6 +67,16 @@ async function initCamera(facingMode = "user") {
       audio: true
     });
     console.log("📷 Camera stream acquired:", localStream);
+
+    // 🪞 Show own video locally
+    const mySeat = localStorage.getItem("mySeat") || "p1";
+    const localVid = document.getElementById(`video-${mySeat}`);
+    if (localVid) {
+      console.log(`🎥 Showing local cam in ${mySeat}`);
+      localVid.srcObject = localStream;
+    } else {
+      console.warn("⚠️ Could not find local video element for:", mySeat);
+    }
   } catch (err) {
     console.error("🚫 Camera access error:", err);
   }
