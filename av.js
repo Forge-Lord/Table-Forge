@@ -1,4 +1,4 @@
-// ✅ av.js – Browser-safe with PeerJS global + Firebase CDN inline
+// ✅ DEBUG av.js – with PeerJS global + Firebase CDN + logging
 
 const Peer = window.Peer;
 
@@ -34,21 +34,26 @@ export async function setupAVMesh(players, me, roomId) {
   peer = new Peer(me);
 
   peer.on('open', id => {
+    console.log("🔑 Peer ID created:", id);
     const playerRef = ref(db, `rooms/${roomId}/players/${me}`);
     update(playerRef, { peerId: id });
   });
 
   peer.on('call', call => {
+    console.log("📞 Incoming call from:", call.peer);
     call.answer(localStream);
     call.on('stream', remoteStream => {
+      console.log("📡 Receiving remote stream:", remoteStream);
       renderRemoteStream(call.metadata?.seat || call.peer, remoteStream);
     });
   });
 
   players.forEach(player => {
     if (player.name !== me && player.peerId) {
+      console.log("📤 Calling peer:", player.peerId);
       const call = peer.call(player.peerId, localStream, { metadata: { seat: player.seat } });
       call.on('stream', remoteStream => {
+        console.log("🎥 Stream from", player.name, "at seat", player.seat, remoteStream);
         renderRemoteStream(player.seat, remoteStream);
       });
     }
@@ -61,18 +66,25 @@ async function initCamera(facingMode = "user") {
       video: { facingMode },
       audio: true
     });
+    console.log("📷 Camera stream acquired:", localStream);
   } catch (err) {
-    console.error("Camera access error:", err);
+    console.error("🚫 Camera access error:", err);
   }
 }
 
 function renderRemoteStream(seat, stream) {
   const vid = document.getElementById(`video-${seat}`);
-  if (vid) vid.srcObject = stream;
+  if (!vid) {
+    console.warn(`⚠️ No video element found for seat ${seat}`);
+    return;
+  }
+  console.log(`🎥 Attaching stream to video-${seat}`, stream);
+  vid.srcObject = stream;
 }
 
 window.addEventListener("DOMContentLoaded", async () => {
   currentRoom = new URLSearchParams(location.search).get("room");
   currentPlayer = localStorage.getItem("displayName") || "Unknown";
   await initCamera(localStorage.getItem("cameraFacingMode") || "user");
+  console.log("🧠 DOM Ready — Player:", currentPlayer, "Room:", currentRoom);
 });
