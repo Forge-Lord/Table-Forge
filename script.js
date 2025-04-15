@@ -1,13 +1,5 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-app.js";
-import {
-  getDatabase,
-  ref,
-  set,
-  get,
-  child,
-  onValue,
-  update
-} from "https://www.gstatic.com/firebasejs/9.22.0/firebase-database.js";
+import { getDatabase, ref, set, get, child, onValue, update } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-database.js";
 
 const firebaseConfig = {
   apiKey: "AIzaSyBzvVpMCdg3Y6i5vCGWarorcTmzBzjmPow",
@@ -24,31 +16,23 @@ let currentName = localStorage.getItem("displayName") || "";
 
 function makeCode(length = 5) {
   const chars = "abcdefghijklmnopqrstuvwxyz0123456789";
-  return Array.from({ length }, () =>
-    chars[Math.floor(Math.random() * chars.length)]
-  ).join("");
+  return Array.from({ length }, () => chars[Math.floor(Math.random() * chars.length)]).join('');
 }
 
 async function createRoom() {
-  console.log("🧪 createRoom called");
-  const name = localStorage.getItem("displayName");
-  if (!name) {
-    alert("You must be signed in to create a room.");
-    return (window.location.href = "/profile.html");
-  }
+  const localName = localStorage.getItem("displayName");
+  const nameInput = document.getElementById("name");
+  const name = localName || (nameInput ? nameInput.value.trim() : "");
+  if (!name) return alert("Please enter your name");
+
+  localStorage.setItem("displayName", name);
 
   const roomName = document.getElementById("roomName").value.trim();
   const template = document.getElementById("template").value;
-  const playerCount = parseInt(
-    document.getElementById("playerCount").value
-  );
+  const playerCount = parseInt(document.getElementById("playerCount").value);
   const roomId = "room-" + makeCode();
   const roomRef = ref(db, `rooms/${roomId}`);
-  const seatMap = {
-    2: ["p1", "p2"],
-    3: ["p1", "p2", "p3"],
-    4: ["p1", "p2", "p3", "p4"]
-  };
+  const seatMap = { 2: ["p1", "p2"], 3: ["p1", "p2", "p3"], 4: ["p1", "p2", "p3", "p4"] };
 
   await set(roomRef, {
     roomName: roomName || null,
@@ -71,9 +55,10 @@ async function createRoom() {
 }
 
 async function joinRoom() {
-  const name = localStorage.getItem("displayName") || "Unknown";
+  const name = localStorage.getItem("displayName") || document.getElementById("joinName")?.value?.trim();
   const code = document.getElementById("roomCode").value.trim();
-  if (!code) return alert("Please enter a room code");
+  if (!name || !code) return alert("Please enter name and room code");
+  localStorage.setItem("displayName", name);
 
   const roomId = code.startsWith("room-") ? code : `room-${code}`;
   joinLobby(roomId);
@@ -89,7 +74,7 @@ function joinLobby(roomId) {
 
   const roomRef = ref(db, `rooms/${roomId}`);
 
-  onValue(roomRef, (snap) => {
+  onValue(roomRef, snap => {
     const data = snap.val();
     if (!data) return;
 
@@ -97,7 +82,7 @@ function joinLobby(roomId) {
     playerListDiv.innerHTML = "";
     const players = data.players || {};
     const seatKeys = ["p1", "p2", "p3", "p4"];
-    const usedSeats = Object.values(players).map((p) => p.seat);
+    const usedSeats = Object.values(players).map(p => p.seat);
 
     for (const pname in players) {
       const p = players[pname];
@@ -108,7 +93,7 @@ function joinLobby(roomId) {
     }
 
     if (!players[currentName]) {
-      const openSeat = seatKeys.find((sk) => !usedSeats.includes(sk));
+      const openSeat = seatKeys.find(sk => !usedSeats.includes(sk));
       if (!openSeat) return alert("Room full");
       update(ref(db, `rooms/${roomId}/players/${currentName}`), {
         name: currentName,
@@ -137,20 +122,11 @@ function startGame() {
 
 function flipCamera() {
   const current = localStorage.getItem("cameraFacingMode") || "user";
-  localStorage.setItem(
-    "cameraFacingMode",
-    current === "user" ? "environment" : "user"
-  );
+  localStorage.setItem("cameraFacingMode", current === "user" ? "environment" : "user");
 }
 
-// Ensure mobile scope
+// Bind to window (for mobile)
 window.createRoom = createRoom;
 window.joinRoom = joinRoom;
 window.startGame = startGame;
 window.flipCamera = flipCamera;
-
-// Add fallback click listeners (for some mobile bugs)
-document.addEventListener("DOMContentLoaded", () => {
-  document.getElementById("createBtn")?.addEventListener("click", createRoom);
-  document.getElementById("joinBtn")?.addEventListener("click", joinRoom);
-});
