@@ -1,4 +1,4 @@
-// ✅ FINAL av.js – Self-cam preview + debug + mesh
+// ✅ FINAL av.js – Self-cam auto-seat detection + debug + mesh
 
 const Peer = window.Peer;
 
@@ -68,8 +68,17 @@ async function initCamera(facingMode = "user") {
     });
     console.log("📷 Camera stream acquired:", localStream);
 
-    // 🪞 Show own video locally
-    const mySeat = localStorage.getItem("mySeat") || "p1";
+    // 🪞 Show own video in correct seat based on player name match
+    const mySeat = (() => {
+      const boxes = document.querySelectorAll('[id^="seat-"]');
+      for (const box of boxes) {
+        if (box.innerHTML.includes(currentPlayer)) {
+          return box.id.replace("seat-", "");
+        }
+      }
+      return "p1";
+    })();
+
     const localVid = document.getElementById(`video-${mySeat}`);
     if (localVid) {
       console.log(`🎥 Showing local cam in ${mySeat}`);
