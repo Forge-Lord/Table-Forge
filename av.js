@@ -1,4 +1,4 @@
-// ⚒️ Forge Sync AV.JS v2.7 – Peer-safe local cam binding, visibility checks, fallback-proof
+// ⚒️ Forge Sync AV.JS v2.8 – Stream guard, error logging, call tracking
 
 const Peer = window.Peer;
 
@@ -6,7 +6,8 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.1/firebas
 import {
   getDatabase,
   ref,
-  update
+  update,
+  onValue
 } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-database.js";
 
 const firebaseConfig = {
@@ -23,6 +24,7 @@ let localStream = null;
 let currentPlayer = null;
 let currentRoom = null;
 let peer = null;
+let alreadySetup = false;
 
 function logToScreen(msg) {
   console.log(msg);
@@ -43,6 +45,8 @@ function logToScreen(msg) {
 }
 
 export async function setupAVMesh(players, me, roomId) {
+  if (alreadySetup) return;
+  alreadySetup = true;
   logToScreen("🛠️ setupAVMesh called for " + me);
   currentPlayer = me;
   currentRoom = roomId;
@@ -58,6 +62,12 @@ export async function setupAVMesh(players, me, roomId) {
       logToScreen("📡 Received remote stream from " + call.peer);
       renderRemoteStream(call.metadata?.seat || call.peer, remoteStream);
     });
+    call.on('error', err => {
+      logToScreen("❌ Call error from " + call.peer + ": " + err.message);
+    });
+    call.on('close', () => {
+      logToScreen("📴 Call closed by " + call.peer);
+    });
   });
 
   peer.on('open', async id => {
@@ -70,24 +80,17 @@ export async function setupAVMesh(players, me, roomId) {
       if (player.name !== me && player.peerId) {
         logToScreen("📤 Calling peer: " + player.peerId);
         waitForStreamReady(() => {
-          try {
-            const call = peer.call(player.peerId, localStream, {
-              metadata: { seat: player.seat }
-            });
-            if (!call) {
-              logToScreen(`⚠️ No call returned for ${player.name}`);
-              return;
-            }
-            call.on('stream', remoteStream => {
-              logToScreen("🎥 Got remote stream from " + player.name);
-              renderRemoteStream(player.seat, remoteStream);
-            });
-            call.on('error', err => {
-              logToScreen("🚫 Error from call to " + player.name + ": " + err.message);
-            });
-          } catch (err) {
-            logToScreen(`❌ Exception calling ${player.name}: ${err.message}`);
-          }
+          const call = peer.call(player.peerId, localStream, { metadata: { seat: player.seat } });
+          call.on('stream', remoteStream => {
+            logToScreen("🎥 Got remote stream from " + player.name);
+            renderRemoteStream(player.seat, remoteStream);
+          });
+          call.on('error', err => {
+            logToScreen("❌ Outgoing call error to " + player.name + ": " + err.message);
+          });
+          call.on('close', () => {
+            logToScreen("📴 Call closed with " + player.name);
+          });
         });
       }
     });
@@ -184,6 +187,11 @@ function waitForStreamReady(cb) {
   };
   check();
 }
+
+// Mute workaround
+window.toggleMic = () => {
+  logToScreen("🔇 toggleMic placeholder called (not implemented)");
+};
 
 window.addEventListener("DOMContentLoaded", async () => {
   currentRoom = new URLSearchParams(location.search).get("room");
