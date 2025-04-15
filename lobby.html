@@ -82,5 +82,18 @@
   <!-- Load logic -->
   <script type="module" src="script.js"></script>
   <script type="module" src="nav.js"></script>
+
+  <!-- Guard access -->
+  <script>
+    const user = localStorage.getItem("displayName");
+    if (!user) {
+      alert("🚫 You must register before entering the lobby.");
+      window.location.href = "/profile.html";
+    } else {
+      document.getElementById("profileName").textContent = user;
+      document.getElementById("name").value = user;
+      document.getElementById("joinName").value = user;
+    }
+  </script>
 </body>
 </html>
