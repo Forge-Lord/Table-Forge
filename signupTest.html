@@ -1,21 +1,26 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>Signup Test</title>
+  <title>Forge Sign-In Test</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <style>
     body {
-      background-color: #111;
+      background: #111;
       color: white;
       font-family: sans-serif;
       text-align: center;
-      padding-top: 80px;
+      margin-top: 100px;
     }
-    input, button {
-      margin: 10px;
+    input {
+      margin: 8px;
       padding: 10px;
       font-size: 16px;
-      width: 240px;
+      width: 250px;
+    }
+    button {
+      padding: 10px 20px;
+      font-size: 16px;
+      margin-top: 10px;
     }
     #message {
       margin-top: 20px;
@@ -24,14 +29,14 @@
   </style>
 </head>
 <body>
-  <h1>Forge Identity Test</h1>
+  <h1>Test Login/Register</h1>
+  <p>Enter a display name + password</p>
   <input type="text" id="displayName" placeholder="Display Name" /><br />
   <input type="password" id="password" placeholder="Password" /><br />
-  <button onclick="loginOrRegister()">Log In / Register</button>
+  <button onclick="loginOrRegister()">Submit</button>
+
   <div id="message"></div>
 
-  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
   <script type="module" src="./signupTest.js"></script>
 </body>
 </html>
