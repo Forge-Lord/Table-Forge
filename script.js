@@ -10,8 +10,8 @@ import {
 const firebaseConfig = {
   apiKey: "AIzaSyBzvVpMCdg3Y6i5vCGWarorcTmzBzjmPow",
   authDomain: "tableforge-app.firebaseapp.com",
-  projectId: "tableforge-app",
-  databaseURL: "https://tableforge-app-default-rtdb.firebaseio.com"
+  databaseURL: "https://tableforge-app-default-rtdb.firebaseio.com",
+  projectId: "tableforge-app"
 };
 
 const app = initializeApp(firebaseConfig);
@@ -25,92 +25,90 @@ function makeCode(length = 5) {
   return Array.from({ length }, () => chars[Math.floor(Math.random() * chars.length)]).join('');
 }
 
-async function createRoom() {
-  const name = localStorage.getItem("displayName");
-  if (!name) {
-    alert("You must be signed in to create a room.");
-    return window.location.href = "/profile.html";
-  }
-
+window.createRoom = async function () {
   const roomName = document.getElementById("roomName").value.trim();
   const template = document.getElementById("template").value;
   const playerCount = parseInt(document.getElementById("playerCount").value);
+  const displayName = localStorage.getItem("displayName");
+
+  if (!displayName) return alert("Not logged in.");
+
   const roomId = "room-" + makeCode();
+  const roomRef = ref(db, `rooms/${roomId}`);
   const seatMap = { 2: ["p1", "p2"], 3: ["p1", "p2", "p3"], 4: ["p1", "p2", "p3", "p4"] };
 
-  const roomRef = ref(db, `rooms/${roomId}`);
   await set(roomRef, {
     roomName: roomName || null,
     template,
     playerCount,
-    host: name,
+    host: displayName,
     started: false,
     players: {
-      [name]: {
-        name,
+      [displayName]: {
+        name: displayName,
+        seat: seatMap[playerCount][0],
         life: template === "commander" ? 40 : 8000,
-        commander: 0,
         status: "",
-        seat: seatMap[playerCount][0]
+        commander: 0
       }
     }
   });
 
   joinLobby(roomId);
-}
+};
 
-async function joinRoom() {
-  const name = localStorage.getItem("displayName") || "Unknown";
-  const code = document.getElementById("roomCode").value.trim();
-  if (!code) return alert("Please enter a room code");
+window.joinRoom = function () {
+  const roomCode = document.getElementById("roomCode").value.trim();
+  if (!roomCode) return alert("Please enter a room code.");
 
-  const roomId = code.startsWith("room-") ? code : `room-${code}`;
+  const roomId = roomCode.startsWith("room-") ? roomCode : `room-${roomCode}`;
   joinLobby(roomId);
-}
+};
 
 function joinLobby(roomId) {
   currentRoom = roomId;
-  currentName = localStorage.getItem("displayName") || "Unknown";
+  currentName = localStorage.getItem("displayName") || "";
 
   document.getElementById("preGame").style.display = "none";
   document.getElementById("lobbyView").style.display = "block";
   document.getElementById("roomDisplay").textContent = roomId;
 
   const roomRef = ref(db, `rooms/${roomId}`);
+  const seatKeys = ["p1", "p2", "p3", "p4"];
 
   onValue(roomRef, snap => {
     const data = snap.val();
     if (!data) return;
 
-    const playerListDiv = document.getElementById("playerList");
-    playerListDiv.innerHTML = "";
+    const playerList = document.getElementById("playerList");
+    playerList.innerHTML = "";
+
     const players = data.players || {};
-    const seatKeys = ["p1", "p2", "p3", "p4"];
     const usedSeats = Object.values(players).map(p => p.seat);
 
     for (const pname in players) {
       const p = players[pname];
-      const div = document.createElement("div");
-      div.className = "player-entry";
-      div.textContent = `${p.seat.toUpperCase()} - ${p.name}`;
-      playerListDiv.appendChild(div);
+      const entry = document.createElement("div");
+      entry.className = "player-entry";
+      entry.textContent = `${p.seat.toUpperCase()} - ${p.name}`;
+      playerList.appendChild(entry);
     }
 
+    // Join if not in yet
     if (!players[currentName]) {
-      const openSeat = seatKeys.find(sk => !usedSeats.includes(sk));
-      if (!openSeat) return alert("Room full");
+      const openSeat = seatKeys.find(s => !usedSeats.includes(s));
+      if (!openSeat) return alert("Room full.");
       update(ref(db, `rooms/${roomId}/players/${currentName}`), {
         name: currentName,
         seat: openSeat,
         life: data.template === "commander" ? 40 : 8000,
-        commander: 0,
-        status: ""
+        status: "",
+        commander: 0
       });
     }
 
-    const startBtn = document.getElementById("startGameBtn");
     if (data.host === currentName && !data.started) {
-      startBtn.style.display = "inline-block";
+      document.getElementById("startGameBtn").style.display = "inline-block";
     }
 
     if (data.started) {
@@ -119,17 +117,13 @@ function joinLobby(roomId) {
   });
 }
 
-function startGame() {
-  const roomRef = ref(db, `rooms/${currentRoom}`);
-  update(roomRef, { started: true });
-}
+window.startGame = function () {
+  if (currentRoom) {
+    update(ref(db, `rooms/${currentRoom}`), { started: true });
+  }
+};
 
-function flipCamera() {
+window.flipCamera = function () {
   const current = localStorage.getItem("cameraFacingMode") || "user";
   localStorage.setItem("cameraFacingMode", current === "user" ? "environment" : "user");
-}
-
-window.createRoom = createRoom;
-window.joinRoom = joinRoom;
-window.startGame = startGame;
-window.flipCamera = flipCamera;
+};
