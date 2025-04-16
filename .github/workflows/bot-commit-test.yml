@@ -1,0 +1,23 @@
+name: ForgeSoul Bot Test Commit
+
+on:
+  workflow_dispatch:  # allows manual trigger in GitHub Actions
+
+jobs:
+  commit-test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout the repo
+        uses: actions/checkout@v3
+
+      - name: Create test file
+        run: echo "ForgeSoul Bot was here! 🚀" > test-from-bot.txt
+
+      - name: Commit file
+        run: |
+          git config --global user.name "ForgeSoul Bot"
+          git config --global user.email "forge-soul@bots.tableforge.app"
+          git add test-from-bot.txt
+          git commit -m "🤖 ForgeSoul Bot test commit"
+          git push
