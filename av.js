@@ -1,26 +1,32 @@
 let currentStream = null;
+let currentVideo = null;
 
 export async function setupAVMesh(players, currentName, roomId) {
   console.log("🔌 Setting up AV mesh for", currentName, "in", roomId);
   const player = players.find(p => p.name === currentName);
-  if (!player) return console.warn("Player not found:", currentName);
+  if (!player) return console.warn("⚠️ Player not found:", currentName);
 
   const seat = player.seat;
   const videoEl = document.getElementById(`video-${seat}`);
-  if (!videoEl) return console.warn("🎥 Local video slot not found");
-
   const uiBox = document.querySelector(`#seat-${seat} .player-ui`);
-  if (!uiBox) return console.warn("UI box not found");
 
-  // --- Camera Dropdown ---
+  if (!videoEl || !uiBox) {
+    console.warn("❌ Missing elements for local player UI. Retrying...");
+    setTimeout(() => setupAVMesh(players, currentName, roomId), 500);
+    return;
+  }
+
+  currentVideo = videoEl;
+
+  // === Device Selector ===
   const dropdown = document.createElement("select");
   dropdown.style.marginTop = "6px";
   dropdown.style.fontSize = "12px";
 
   const devices = await navigator.mediaDevices.enumerateDevices();
   const videoInputs = devices.filter(d => d.kind === "videoinput");
-
   const savedDeviceId = localStorage.getItem("preferredCamera");
+
   videoInputs.forEach(device => {
     const option = document.createElement("option");
     option.value = device.deviceId;
@@ -29,17 +35,17 @@ export async function setupAVMesh(players, currentName, roomId) {
     dropdown.appendChild(option);
   });
 
-  uiBox.appendChild(dropdown);
-
   dropdown.addEventListener("change", () => {
-    const selectedDeviceId = dropdown.value;
-    localStorage.setItem("preferredCamera", selectedDeviceId);
-    startStream(selectedDeviceId, videoEl);
+    const selectedId = dropdown.value;
+    localStorage.setItem("preferredCamera", selectedId);
+    startStream(selectedId, videoEl);
   });
 
-  // --- Control Buttons ---
+  uiBox.appendChild(dropdown);
+
+  // === Mic & Cam Toggles ===
   const micBtn = document.createElement("button");
-  micBtn.textContent = "Mute";
+  micBtn.textContent = "Mute Mic";
   micBtn.style.marginTop = "4px";
   micBtn.onclick = toggleMic;
 
@@ -51,11 +57,11 @@ export async function setupAVMesh(players, currentName, roomId) {
   uiBox.appendChild(micBtn);
   uiBox.appendChild(camBtn);
 
-  // --- Start with saved or first cam ---
-  const initialId = dropdown.value || videoInputs[0]?.deviceId;
-  if (initialId) startStream(initialId, videoEl);
+  const startId = dropdown.value || videoInputs[0]?.deviceId;
+  if (startId) startStream(startId, videoEl);
 }
 
+// === Start stream with specific cam ===
 function startStream(deviceId, videoEl) {
   if (currentStream) {
     currentStream.getTracks().forEach(track => track.stop());
@@ -68,26 +74,27 @@ function startStream(deviceId, videoEl) {
     currentStream = stream;
     videoEl.srcObject = stream;
     videoEl.muted = true;
-    console.log("🎥 Stream started");
+    videoEl.play();
+    console.log("✅ Stream started with device:", deviceId);
   }).catch(err => {
-    console.error("🎥 Failed to start stream:", err);
+    console.error("❌ Failed to start stream:", err);
   });
 }
 
-// --- Toggle Microphone ---
+// === Toggle mic ===
 window.toggleMic = function () {
   if (!currentStream) return;
-  const audioTrack = currentStream.getAudioTracks()[0];
-  if (!audioTrack) return;
-  audioTrack.enabled = !audioTrack.enabled;
-  console.log(audioTrack.enabled ? "🎤 Mic unmuted" : "🔇 Mic muted");
+  const track = currentStream.getAudioTracks()[0];
+  if (!track) return;
+  track.enabled = !track.enabled;
+  console.log(track.enabled ? "🎙️ Mic on" : "🔇 Mic muted");
 };
 
-// --- Toggle Camera Video ---
+// === Toggle cam ===
 window.toggleCam = function () {
   if (!currentStream) return;
-  const videoTrack = currentStream.getVideoTracks()[0];
-  if (!videoTrack) return;
-  videoTrack.enabled = !videoTrack.enabled;
-  console.log(videoTrack.enabled ? "📷 Cam resumed" : "📷 Cam paused");
+  const track = currentStream.getVideoTracks()[0];
+  if (!track) return;
+  track.enabled = !track.enabled;
+  console.log(track.enabled ? "📷 Cam on" : "📷 Cam paused");
 };
