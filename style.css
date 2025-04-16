@@ -1,56 +1,46 @@
 body {
+  margin: 0;
   background-color: #111;
   color: white;
   font-family: sans-serif;
+}
+
+h1, h2, h3 {
+  margin-top: 1em;
+  color: #ffcc66;
   text-align: center;
-  margin: 0;
-  padding: 0;
 }
 
 input, button, select {
   font-size: 16px;
   padding: 10px;
-  margin: 8px;
-  width: 260px;
+  margin: 8px auto;
+  width: 280px;
   max-width: 90%;
+  display: block;
+  border-radius: 6px;
+  border: none;
   background: #222;
   color: white;
-  border: 1px solid #555;
-  border-radius: 4px;
 }
 
 button {
+  background: #444;
   cursor: pointer;
 }
 
 button:hover {
-  background: #333;
-}
-
-h1, h2, h3 {
-  color: #eee;
-}
-
-#message {
-  margin-top: 20px;
-  color: #f55;
-}
-
-#playerList {
-  margin-top: 2em;
+  background: #666;
 }
 
 .player-entry {
   padding: 6px;
   border-bottom: 1px solid #444;
+  text-align: center;
 }
 
-.flip-button {
-  background: #333;
-  color: #fff;
-  border: 1px solid #666;
-  cursor: pointer;
-  margin-top: 1em;
+#playerList {
+  margin-top: 2em;
 }
 
 #top-right {
@@ -66,4 +56,21 @@ h1, h2, h3 {
   margin-top: 4px;
   font-size: 12px;
   padding: 4px 8px;
+}
+
+.status-banner {
+  background: #222;
+  padding: 12px;
+  text-align: center;
+  color: white;
+  font-weight: bold;
+  border-top: 1px solid #555;
+}
+
+.flip-button {
+  background: #333;
+  color: #fff;
+  border: 1px solid #666;
+  cursor: pointer;
+  margin-top: 1em;
 }
