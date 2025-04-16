@@ -1,23 +1,28 @@
 name: ForgeSoul Bot Test Commit
 
 on:
-  workflow_dispatch:  # allows manual trigger in GitHub Actions
+  workflow_dispatch:
 
 jobs:
   commit-test:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout the repo
-        uses: actions/checkout@v3
+    - name: Checkout repository
+      uses: actions/checkout@v3
 
-      - name: Create test file
-        run: echo "ForgeSoul Bot was here! 🚀" > test-from-bot.txt
+    - name: Create test file
+      run: echo "Hello from ForgeSoul Bot" > hello-forge-spirit.txt
 
-      - name: Commit file
-        run: |
-          git config --global user.name "ForgeSoul Bot"
-          git config --global user.email "forge-soul@bots.tableforge.app"
-          git add test-from-bot.txt
-          git commit -m "🤖 ForgeSoul Bot test commit"
-          git push
+    - name: Configure Git identity
+      run: |
+        git config user.name "ForgeSoul Bot"
+        git config user.email "forgesoul@example.com"
+
+    - name: Commit file
+      run: |
+        git add hello-forge-spirit.txt
+        git commit -m "ForgeSoul Bot test commit"
+        git push
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
