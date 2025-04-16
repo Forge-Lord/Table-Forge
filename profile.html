@@ -2,24 +2,33 @@
 <html>
 <head>
   <title>Forge Identity</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <style>
     body {
-      background: #111;
+      background-color: #111;
       color: white;
       font-family: sans-serif;
       text-align: center;
-      padding-top: 80px;
+      margin-top: 100px;
     }
-    input, button {
-      padding: 10px;
+    input {
       margin: 10px;
+      padding: 8px;
       font-size: 16px;
       width: 240px;
+    }
+    button {
+      padding: 10px 20px;
+      font-size: 16px;
+      margin-top: 10px;
     }
     #message {
       margin-top: 20px;
       color: #f55;
+    }
+    p {
+      font-size: 0.9em;
+      color: #888;
     }
   </style>
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
@@ -27,9 +36,10 @@
 </head>
 <body>
   <h1>Forge Identity</h1>
-  <p style="color: #aaa;">* Display name becomes forge_name@forge.app</p>
-  <input type="text" id="displayName" placeholder="Display Name" /><br />
-  <input type="password" id="password" placeholder="Password" /><br />
+  <p>* Display name becomes forge_name@forge.app (no spaces or symbols)</p>
+
+  <input type="text" id="displayName" placeholder="Display Name" /> <br />
+  <input type="password" id="password" placeholder="Password" /> <br />
   <button onclick="confirmIdentity()">Confirm Identity</button>
   <div id="message"></div>
 
@@ -42,39 +52,47 @@
       messagingSenderId: "708497363618",
       appId: "1:708497363618:web:39da060b48681944923dfb"
     };
+
     firebase.initializeApp(firebaseConfig);
     const auth = firebase.auth();
 
     function sanitize(name) {
-      return name.trim().toLowerCase().replace(/[^a-z0-9]/g, "_");
+      return name.toLowerCase().replace(/[^a-z0-9]/gi, "_");
     }
 
     async function confirmIdentity() {
-      const name = document.getElementById("displayName").value.trim();
-      const pass = document.getElementById("password").value.trim();
-      const msg = document.getElementById("message");
-      if (!name || !pass) return msg.textContent = "Both fields are required.";
+      const rawName = document.getElementById('displayName').value.trim();
+      const password = document.getElementById('password').value;
+      const message = document.getElementById('message');
+      const displayName = sanitize(rawName);
+      const email = `forge_${displayName}@forge.app`;
 
-      const email = `forge_${sanitize(name)}@forge.app`;
-      console.log("Using email:", email);
+      if (!displayName || !password) {
+        message.textContent = "Please enter both name and password.";
+        return;
+      }
 
       try {
-        await auth.signInWithEmailAndPassword(email, pass);
-        localStorage.setItem("displayName", name);
-        location.href = "/lobby.html";
+        await auth.signInWithEmailAndPassword(email, password);
+        localStorage.setItem("displayName", rawName);
+        message.style.color = "#0f0";
+        message.textContent = `Welcome back, ${rawName}. Redirecting...`;
+        setTimeout(() => window.location.href = "/lobby.html", 1200);
       } catch (err) {
         if (err.code === "auth/user-not-found") {
           try {
-            await auth.createUserWithEmailAndPassword(email, pass);
-            localStorage.setItem("displayName", name);
-            msg.style.color = "#0f0";
-            msg.textContent = "✨ Account created! Redirecting...";
-            setTimeout(() => location.href = "/lobby.html", 1000);
-          } catch (createErr) {
-            msg.textContent = "Signup failed: " + createErr.message;
+            await auth.createUserWithEmailAndPassword(email, password);
+            localStorage.setItem("displayName", rawName);
+            message.style.color = "#0f0";
+            message.textContent = `Account created. Entering lobby...`;
+            setTimeout(() => window.location.href = "/lobby.html", 1200);
+          } catch (signupErr) {
+            message.style.color = "#f55";
+            message.textContent = "Signup failed: " + signupErr.message;
           }
         } else {
-          msg.textContent = "Login failed: " + err.message;
+          message.style.color = "#f55";
+          message.textContent = "Login failed: " + err.message;
         }
       }
     }
