@@ -1,5 +1,11 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-app.js";
-import { getDatabase, ref, set, get, child, onValue, update } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-database.js";
+import {
+  getDatabase,
+  ref,
+  set,
+  update,
+  onValue
+} from "https://www.gstatic.com/firebasejs/9.22.0/firebase-database.js";
 
 const firebaseConfig = {
   apiKey: "AIzaSyBzvVpMCdg3Y6i5vCGWarorcTmzBzjmPow",
@@ -21,14 +27,12 @@ function makeCode(length = 5) {
 
 async function createRoom() {
   const name = localStorage.getItem("displayName");
-  if (!name) {
-    alert("You must be signed in to create a room.");
-    return window.location.href = "/profile.html";
-  }
+  if (!name) return alert("You must be signed in to create a room.");
 
   const roomName = document.getElementById("roomName").value.trim();
   const template = document.getElementById("template").value;
   const playerCount = parseInt(document.getElementById("playerCount").value);
+
   const roomId = "room-" + makeCode();
   const roomRef = ref(db, `rooms/${roomId}`);
   const seatMap = { 2: ["p1", "p2"], 3: ["p1", "p2", "p3"], 4: ["p1", "p2", "p3", "p4"] };
@@ -54,9 +58,9 @@ async function createRoom() {
 }
 
 async function joinRoom() {
-  const name = localStorage.getItem("displayName") || "Unknown";
+  const name = localStorage.getItem("displayName");
   const code = document.getElementById("roomCode").value.trim();
-  if (!code) return alert("Please enter a room code");
+  if (!name || !code) return alert("Enter your name and room code first.");
 
   const roomId = code.startsWith("room-") ? code : `room-${code}`;
   joinLobby(roomId);
@@ -71,7 +75,6 @@ function joinLobby(roomId) {
   document.getElementById("roomDisplay").textContent = roomId;
 
   const roomRef = ref(db, `rooms/${roomId}`);
-
   onValue(roomRef, snap => {
     const data = snap.val();
     if (!data) return;
@@ -123,7 +126,6 @@ function flipCamera() {
   localStorage.setItem("cameraFacingMode", current === "user" ? "environment" : "user");
 }
 
-// Make functions accessible globally
 window.createRoom = createRoom;
 window.joinRoom = joinRoom;
 window.startGame = startGame;
