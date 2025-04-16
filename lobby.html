@@ -9,7 +9,7 @@
       color: white;
       font-family: sans-serif;
       text-align: center;
-      padding: 20px;
+      margin-top: 40px;
     }
     input, button, select {
       font-size: 16px;
@@ -53,11 +53,9 @@
     <button id="logoutBtn">Logout</button>
   </div>
 
-  <h2>Create or Join a Room</h2>
-
   <div id="preGame">
+    <h2>Create or Join a Room</h2>
     <h3>Create Room</h3>
-    <input id="name" placeholder="Your Name" /> <br />
     <input id="roomName" placeholder="Room Name (Optional)" /> <br />
     <label>Choose Template:</label>
     <select id="template">
@@ -71,12 +69,11 @@
       <option value="3">3</option>
       <option value="4">4</option>
     </select> <br />
-    <button id="createRoomBtn">Create Room</button>
+    <button onclick="createRoom()">Create Room</button>
 
     <h3>Join Room</h3>
-    <input id="joinName" placeholder="Your Name" /> <br />
-    <input id="roomCode" placeholder="Room Code (e.g., room-abc12)" />
-    <button id="joinRoomBtn">Join Room</button>
+    <input id="roomCode" placeholder="Room Code (e.g., room-abc123)" />
+    <button onclick="joinRoom()">Join Room</button>
   </div>
 
   <div id="lobbyView" style="display: none;">
@@ -86,32 +83,37 @@
     <button id="startGameBtn" onclick="startGame()" style="display: none; margin-top: 2em;">Start Game</button>
   </div>
 
-  <!-- Firebase login enforcement -->
+  <!-- Auth Guard -->
   <script type="module">
-    import { requireLogin, logout } from './auth.js';
-    requireLogin();
+    import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-auth.js";
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-app.js";
 
-    document.getElementById("logoutBtn").addEventListener("click", logout);
+    const firebaseConfig = {
+      apiKey: "AIzaSyBzvVpMCdg3Y6i5vCGWarorcTmzBzjmPow",
+      authDomain: "tableforge-app.firebaseapp.com",
+      projectId: "tableforge-app",
+    };
 
-    const displayName = localStorage.getItem("displayName") || "";
-    document.getElementById("profileName").textContent = displayName;
-    document.getElementById("name").value = displayName;
-    document.getElementById("joinName").value = displayName;
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+
+    onAuthStateChanged(auth, user => {
+      if (!user) {
+        window.location.href = "/profile.html";
+      } else {
+        const name = localStorage.getItem("displayName") || user.displayName || "Unknown";
+        document.getElementById("profileName").textContent = name;
+      }
+    });
+
+    document.getElementById("logoutBtn").addEventListener("click", async () => {
+      await signOut(auth);
+      localStorage.clear();
+      window.location.href = "/";
+    });
   </script>
 
-  <!-- Wire logic explicitly -->
+  <!-- Room Logic -->
   <script type="module" src="script.js"></script>
-  <script type="module" src="nav.js"></script>
-  <script>
-    document.getElementById("createRoomBtn").addEventListener("click", () => {
-      if (typeof createRoom === "function") createRoom();
-      else alert("Create Room is not bound.");
-    });
-
-    document.getElementById("joinRoomBtn").addEventListener("click", () => {
-      if (typeof joinRoom === "function") joinRoom();
-      else alert("Join Room is not bound.");
-    });
-  </script>
 </body>
 </html>
