@@ -1,7 +1,15 @@
-import { initializeApp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js";
-import { getAuth } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js";
+import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-app.js";
+import {
+  getAuth,
+  signInWithEmailAndPassword,
+  createUserWithEmailAndPassword
+} from "https://www.gstatic.com/firebasejs/9.22.0/firebase-auth.js";
+import {
+  getFirestore,
+  doc,
+  setDoc
+} from "https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js";
 
-// Firebase config
 const firebaseConfig = {
   apiKey: "AIzaSyBzvVpMCdg3Y6i5vCGWarorcTmzBzjmPow",
   authDomain: "tableforge-app.firebaseapp.com",
@@ -11,9 +19,9 @@ const firebaseConfig = {
   appId: "1:708497363618:web:39da060b48681944923dfb"
 };
 
-// Init Firebase
-firebase.initializeApp(firebaseConfig);
-const auth = getAuth();
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db = getFirestore(app);
 
 window.loginOrRegister = async function () {
   const displayName = document.getElementById("displayName").value.trim();
@@ -28,25 +36,27 @@ window.loginOrRegister = async function () {
   const email = `forge_${displayName}@forge.app`;
 
   try {
-    await auth.signInWithEmailAndPassword(email, password);
+    await signInWithEmailAndPassword(auth, email, password);
     localStorage.setItem("displayName", displayName);
-    message.style.color = "lime";
+    message.style.color = "lightgreen";
     message.innerText = `Welcome back, ${displayName}.`;
-    setTimeout(() => (window.location.href = "index.html"), 1500);
+    setTimeout(() => window.location.href = "index.html", 1500);
   } catch (loginErr) {
     if (loginErr.code === "auth/user-not-found") {
       try {
-        const userCred = await auth.createUserWithEmailAndPassword(email, password);
+        const userCred = await createUserWithEmailAndPassword(auth, email, password);
+        await setDoc(doc(db, "users", userCred.user.uid), {
+          displayName,
+          createdAt: new Date()
+        });
         localStorage.setItem("displayName", displayName);
-        message.style.color = "lime";
+        message.style.color = "lightgreen";
         message.innerText = `Welcome to the Forge, ${displayName}.`;
-        setTimeout(() => (window.location.href = "index.html"), 1500);
+        setTimeout(() => window.location.href = "index.html", 1500);
       } catch (signupErr) {
-        message.style.color = "#f55";
         message.innerText = "Signup failed: " + signupErr.message;
       }
     } else {
-      message.style.color = "#f55";
       message.innerText = "Login failed: " + loginErr.message;
     }
   }
