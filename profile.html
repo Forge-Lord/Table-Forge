@@ -1,92 +1,47 @@
-<!DOCTYPE html>
-<html>
-<head>
-  <title>Forge Identity</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <style>
-    body {
-      background-color: #111;
-      color: white;
-      font-family: sans-serif;
-      text-align: center;
-      padding-top: 100px;
+<script type="module">
+  import { auth, db } from "./firebase.js";
+  import {
+    signInWithEmailAndPassword,
+    createUserWithEmailAndPassword
+  } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-auth.js";
+  import {
+    set,
+    ref
+  } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-database.js";
+
+  window.login = async function () {
+    const email = document.getElementById("email").value.trim();
+    const password = document.getElementById("password").value;
+    const displayName = document.getElementById("displayName").value.trim();
+
+    if (!email || !password || !displayName) return alert("Please fill out all fields.");
+
+    try {
+      await signInWithEmailAndPassword(auth, email, password);
+      localStorage.setItem("displayName", displayName);
+      window.location.href = "/lobby.html";
+    } catch (err) {
+      alert("Login error: " + err.message);
     }
-    input {
-      margin: 8px;
-      padding: 10px;
-      font-size: 16px;
-      width: 260px;
+  };
+
+  window.register = async function () {
+    const email = document.getElementById("email").value.trim();
+    const password = document.getElementById("password").value;
+    const displayName = document.getElementById("displayName").value.trim();
+
+    if (!email || !password || !displayName) return alert("Please fill out all fields.");
+
+    try {
+      const userCred = await createUserWithEmailAndPassword(auth, email, password);
+      await set(ref(db, `users/${userCred.user.uid}`), {
+        displayName,
+        createdAt: new Date().toISOString()
+      });
+      localStorage.setItem("displayName", displayName);
+      window.location.href = "/lobby.html";
+    } catch (err) {
+      alert("Registration error: " + err.message);
     }
-    button {
-      padding: 10px 20px;
-      font-size: 16px;
-      margin: 10px;
-    }
-    #message {
-      color: #f55;
-      margin-top: 20px;
-    }
-  </style>
-</head>
-<body>
-  <h1>Forge Identity</h1>
-  <p>* Email is required for sign-in. Display name is how you'll appear in-game.</p>
-  <input type="text" id="displayName" placeholder="Display Name" /><br />
-  <input type="email" id="email" placeholder="Email" /><br />
-  <input type="password" id="password" placeholder="Password" /><br />
-  <button onclick="login()">Log In</button>
-  <button onclick="createAccount()">Create Account</button>
-  <div id="message"></div>
-
-  <script type="module">
-    import { auth, db } from './firebase.js';
-    import {
-      signInWithEmailAndPassword,
-      createUserWithEmailAndPassword
-    } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-auth.js";
-    import {
-      doc,
-      setDoc
-    } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js";
-
-    const message = document.getElementById("message");
-
-    async function login() {
-      const email = document.getElementById("email").value.trim();
-      const password = document.getElementById("password").value;
-      const displayName = document.getElementById("displayName").value.trim();
-      message.textContent = "";
-
-      try {
-        await signInWithEmailAndPassword(auth, email, password);
-        localStorage.setItem("displayName", displayName);
-        window.location.href = "lobby.html";
-      } catch (err) {
-        message.textContent = "Login error: " + err.message;
-      }
-    }
-
-    async function createAccount() {
-      const email = document.getElementById("email").value.trim();
-      const password = document.getElementById("password").value;
-      const displayName = document.getElementById("displayName").value.trim();
-      message.textContent = "";
-
-      try {
-        const userCred = await createUserWithEmailAndPassword(auth, email, password);
-        await setDoc(doc(db, "users", userCred.user.uid), {
-          displayName,
-          createdAt: new Date()
-        });
-        localStorage.setItem("displayName", displayName);
-        window.location.href = "lobby.html";
-      } catch (err) {
-        message.textContent = "Signup error: " + err.message;
-      }
-    }
-
-    window.login = login;
-    window.createAccount = createAccount;
-  </script>
-</body>
-</html>
+  };
+</script>
