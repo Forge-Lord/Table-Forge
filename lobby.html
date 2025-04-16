@@ -3,49 +3,7 @@
 <head>
   <title>Table Forge Lobby</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <style>
-    body {
-      background: #111;
-      color: white;
-      font-family: sans-serif;
-      text-align: center;
-      margin-top: 40px;
-    }
-    input, button, select {
-      font-size: 16px;
-      padding: 10px;
-      margin: 8px;
-      width: 260px;
-      max-width: 90%;
-    }
-    #playerList {
-      margin-top: 2em;
-    }
-    .player-entry {
-      padding: 6px;
-      border-bottom: 1px solid #444;
-    }
-    .flip-button {
-      background: #333;
-      color: #fff;
-      border: 1px solid #666;
-      cursor: pointer;
-      margin-top: 1em;
-    }
-    #top-right {
-      position: absolute;
-      top: 10px;
-      right: 12px;
-      font-size: 14px;
-      color: #ccc;
-      text-align: right;
-    }
-    #logoutBtn {
-      margin-top: 4px;
-      font-size: 12px;
-      padding: 4px 8px;
-    }
-  </style>
+  <link rel="stylesheet" href="style.css" />
 </head>
 <body>
   <div id="top-right">
@@ -55,21 +13,21 @@
 
   <h1>Create or Join a Room</h1>
 
-  <div id="preGame" style="display: block;">
+  <div id="preGame">
     <h3>Create Room</h3>
-    <input id="roomName" placeholder="Room Name (Optional)" /> <br />
+    <input id="roomName" placeholder="Room Name (Optional)" /><br />
     <label>Choose Template:</label>
     <select id="template">
       <option value="commander">Commander</option>
       <option value="yugioh">Yu-Gi-Oh!</option>
       <option value="digimon">Digimon</option>
-    </select> <br />
+    </select><br />
     <label>Number of Players:</label>
     <select id="playerCount">
       <option value="2">2</option>
       <option value="3">3</option>
       <option value="4">4</option>
-    </select> <br />
+    </select><br />
     <button onclick="createRoom()">Create Room</button>
 
     <h3>Join Room</h3>
@@ -84,16 +42,16 @@
     <button id="startGameBtn" onclick="startGame()" style="display: none; margin-top: 2em;">Start Game</button>
   </div>
 
+  <!-- Auth Guard + Logout -->
   <script type="module">
     import { requireLogin, logout } from './auth.js';
     requireLogin();
-
-    document.addEventListener("DOMContentLoaded", () => {
-      const name = localStorage.getItem("displayName") || "Unknown";
-      document.getElementById("profileName").textContent = name;
-      document.getElementById("logoutBtn").addEventListener("click", logout);
-    });
+    document.getElementById("logoutBtn").addEventListener("click", logout);
+    document.getElementById("profileName").textContent = localStorage.getItem("displayName") || "Unknown";
   </script>
+
+  <!-- Main Logic -->
   <script type="module" src="script.js"></script>
+  <script type="module" src="nav.js"></script>
 </body>
 </html>
