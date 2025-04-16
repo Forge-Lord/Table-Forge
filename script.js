@@ -1,6 +1,5 @@
-import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-app.js";
+import { db, app } from "./firebase.js";
 import {
-  getDatabase,
   ref,
   set,
   update,
@@ -12,61 +11,43 @@ import {
   signOut
 } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-auth.js";
 
-// Firebase config
-const firebaseConfig = {
-  apiKey: "AIzaSyBzvVpMCdg3Y6i5vCGWarorcTmzBzjmPow",
-  authDomain: "tableforge-app.firebaseapp.com",
-  databaseURL: "https://tableforge-app-default-rtdb.firebaseio.com",
-  projectId: "tableforge-app"
-};
-
-const app = initializeApp(firebaseConfig);
-const db = getDatabase(app);
 const auth = getAuth(app);
-
 let currentRoom = null;
 let currentName = null;
 
-function makeCode(length = 5) {
-  const chars = "abcdefghijklmnopqrstuvwxyz0123456789";
-  return Array.from({ length }, () => chars[Math.floor(Math.random() * chars.length)]).join('');
-}
-
+// Monitor auth and show profile name
 onAuthStateChanged(auth, user => {
   if (!user) {
     window.location.href = "/profile.html";
   } else {
-    const name = localStorage.getItem("displayName") || "Unknown";
-    currentName = name;
-    document.getElementById("profileName").textContent = name;
-    document.getElementById("name").value = name;
-    document.getElementById("joinName").value = name;
-
-    const logoutBtn = document.getElementById("logoutBtn");
-    if (logoutBtn) {
-      logoutBtn.onclick = () => {
-        signOut(auth).then(() => {
-          localStorage.removeItem("displayName");
-          window.location.href = "/profile.html";
-        });
-      };
-    }
+    const displayName = localStorage.getItem("displayName") || "Unknown";
+    currentName = displayName;
+    document.getElementById("profileName").textContent = displayName;
   }
 });
 
-window.createRoom = async function () {
-  const name = document.getElementById("name").value.trim();
+document.getElementById("logoutBtn").onclick = async () => {
+  await signOut(auth);
+  localStorage.clear();
+  window.location.href = "/";
+};
+
+function makeRoomCode(length = 5) {
+  const chars = "abcdefghijklmnopqrstuvwxyz0123456789";
+  return Array.from({ length }, () => chars[Math.floor(Math.random() * chars.length)]).join('');
+}
+
+async function createRoom() {
+  const name = localStorage.getItem("displayName");
+  if (!name) return alert("No display name found.");
+
   const roomName = document.getElementById("roomName").value.trim();
   const template = document.getElementById("template").value;
   const playerCount = parseInt(document.getElementById("playerCount").value);
-  if (!name) return alert("Please enter your name");
-  localStorage.setItem("displayName", name);
-
-  const roomId = "room-" + makeCode();
-  const roomRef = ref(db, `rooms/${roomId}`);
+  const roomId = "room-" + makeRoomCode();
   const seatMap = { 2: ["p1", "p2"], 3: ["p1", "p2", "p3"], 4: ["p1", "p2", "p3", "p4"] };
 
-  await set(roomRef, {
+  await set(ref(db, `rooms/${roomId}`), {
     roomName: roomName || null,
     template,
     playerCount,
@@ -84,17 +65,7 @@ window.createRoom = async function () {
   });
 
   joinLobby(roomId);
-};
-
-window.joinRoom = async function () {
-  const name = document.getElementById("joinName").value.trim();
-  const code = document.getElementById("roomCode").value.trim();
-  if (!name || !code) return alert("Please enter name and room code");
-  localStorage.setItem("displayName", name);
-
-  const roomId = code.startsWith("room-") ? code : `room-${code}`;
-  joinLobby(roomId);
-};
+}
 
 function joinLobby(roomId) {
   currentRoom = roomId;
@@ -105,6 +76,7 @@ function joinLobby(roomId) {
   document.getElementById("roomDisplay").textContent = roomId;
 
   const roomRef = ref(db, `rooms/${roomId}`);
+
   onValue(roomRef, snap => {
     const data = snap.val();
     if (!data) return;
@@ -146,12 +118,27 @@ function joinLobby(roomId) {
   });
 }
 
-window.startGame = function () {
+async function joinRoom() {
+  const name = localStorage.getItem("displayName") || "Unknown";
+  const code = document.getElementById("roomCode").value.trim();
+  if (!code) return alert("Please enter a room code");
+  const roomId = code.startsWith("room-") ? code : `room-${code}`;
+  joinLobby(roomId);
+}
+
+function startGame() {
+  if (!currentRoom) return;
   const roomRef = ref(db, `rooms/${currentRoom}`);
   update(roomRef, { started: true });
-};
+}
 
-window.flipCamera = function () {
+function flipCamera() {
   const current = localStorage.getItem("cameraFacingMode") || "user";
   localStorage.setItem("cameraFacingMode", current === "user" ? "environment" : "user");
-};
+}
+
+// Expose functions to global for button calls
+window.createRoom = createRoom;
+window.joinRoom = joinRoom;
+window.startGame = startGame;
+window.flipCamera = flipCamera;
