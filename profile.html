@@ -2,92 +2,88 @@
 <html>
 <head>
   <title>Forge Identity</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <style>
     body {
       background-color: #111;
       color: white;
       font-family: sans-serif;
       text-align: center;
-      padding-top: 80px;
+      padding-top: 100px;
     }
     input {
-      margin: 10px;
+      margin: 8px;
       padding: 10px;
       font-size: 16px;
-      width: 250px;
+      width: 260px;
     }
     button {
       padding: 10px 20px;
       font-size: 16px;
+      margin-top: 12px;
     }
-    #msg {
-      margin-top: 20px;
+    #message {
       color: #f55;
+      margin-top: 20px;
     }
   </style>
-  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
 </head>
 <body>
   <h1>Forge Identity</h1>
   <p>* Email is required for sign-in. Display name is how you'll appear in-game.</p>
-  <input id="displayName" placeholder="Display Name (Shown in game)" /><br>
-  <input id="email" placeholder="Email Address" /><br>
-  <input id="password" type="password" placeholder="Password" /><br>
+  <input type="text" id="displayName" placeholder="Display Name" /><br />
+  <input type="email" id="email" placeholder="Email" /><br />
+  <input type="password" id="password" placeholder="Password" /><br />
   <button onclick="confirmIdentity()">Confirm Identity</button>
-  <div id="msg"></div>
+  <div id="message"></div>
 
-  <script>
-    const firebaseConfig = {
-      apiKey: "AIzaSyBzvVpMCdg3Y6i5vCGWarorcTmzBzjmPow",
-      authDomain: "tableforge-app.firebaseapp.com",
-      projectId: "tableforge-app"
-    };
-
-    firebase.initializeApp(firebaseConfig);
-    const auth = firebase.auth();
-    const db = firebase.firestore();
+  <script type="module">
+    import { auth, db } from './firebase.js';
+    import {
+      signInWithEmailAndPassword,
+      createUserWithEmailAndPassword
+    } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-auth.js";
+    import {
+      doc,
+      setDoc
+    } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js";
 
     async function confirmIdentity() {
-      const name = document.getElementById('displayName').value.trim();
-      const email = document.getElementById('email').value.trim();
-      const password = document.getElementById('password').value;
-      const msg = document.getElementById('msg');
+      const displayName = document.getElementById("displayName").value.trim();
+      const email = document.getElementById("email").value.trim();
+      const password = document.getElementById("password").value;
+      const message = document.getElementById("message");
+      message.textContent = "";
 
-      msg.textContent = "";
-
-      if (!name || !email || !password) {
-        msg.textContent = "Please fill out all fields.";
+      if (!displayName || !email || !password) {
+        message.textContent = "Please fill out all fields.";
         return;
       }
 
       try {
-        const userCred = await auth.signInWithEmailAndPassword(email, password);
-        localStorage.setItem("displayName", name);
-        window.location.href = "/lobby.html";
-      } catch (loginErr) {
-        if (loginErr.code === "auth/user-not-found") {
+        const userCred = await signInWithEmailAndPassword(auth, email, password);
+        localStorage.setItem("displayName", displayName);
+        window.location.href = "lobby.html";
+      } catch (err) {
+        if (err.code === "auth/user-not-found") {
           try {
-            const newUser = await auth.createUserWithEmailAndPassword(email, password);
-            await db.collection("users").doc(newUser.user.uid).set({
-              displayName: name,
-              email,
+            const userCred = await createUserWithEmailAndPassword(auth, email, password);
+            await setDoc(doc(db, "users", userCred.user.uid), {
+              displayName,
               createdAt: new Date()
             });
-            localStorage.setItem("displayName", name);
-            msg.style.color = "#0f0";
-            msg.textContent = "Account created! Redirecting...";
-            setTimeout(() => window.location.href = "/lobby.html", 1000);
+            localStorage.setItem("displayName", displayName);
+            window.location.href = "lobby.html";
           } catch (signupErr) {
-            msg.textContent = "Signup failed: " + signupErr.message;
+            message.textContent = "Signup error: " + signupErr.message;
           }
         } else {
-          msg.textContent = "Login failed: " + loginErr.message;
+          message.textContent = "Login error: " + err.message;
         }
       }
     }
+
+    window.confirmIdentity = confirmIdentity;
   </script>
 </body>
 </html>
