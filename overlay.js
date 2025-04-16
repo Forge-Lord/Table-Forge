@@ -22,6 +22,8 @@ const displayName = localStorage.getItem("displayName") || "Unknown";
 const layout = document.getElementById("overlayGrid");
 const seatMap = { p1: "top-left", p2: "top-right", p3: "bottom-left", p4: "bottom-right" };
 
+let localStream = null; // Make sure this is set by setupAVMesh
+
 onValue(ref(db, `rooms/${roomId}`), snap => {
   const data = snap.val();
   if (!data) return;
@@ -65,7 +67,9 @@ onValue(ref(db, `rooms/${roomId}`), snap => {
     layout.appendChild(box);
   });
 
-  setupAVMesh(Object.values(players), displayName, roomId);
+  setupAVMesh(Object.values(players), displayName, roomId).then(stream => {
+    localStream = stream; // 💡 Assign for use in mic/cam toggle
+  });
 });
 
 window.adjustLife = (seat, delta) => {
@@ -77,4 +81,18 @@ window.save = (seat, name, template) => {
   const life = parseInt(document.getElementById(`life-${seat}`).value);
   const status = document.getElementById(`stat-${seat}`).value;
   update(ref(db, `rooms/${roomId}/players/${name}`), { life, status });
+};
+
+window.toggleCam = () => {
+  const videoTrack = localStream?.getVideoTracks?.()[0];
+  if (videoTrack) {
+    videoTrack.enabled = !videoTrack.enabled;
+  }
+};
+
+window.toggleMic = () => {
+  const audioTrack = localStream?.getAudioTracks?.()[0];
+  if (audioTrack) {
+    audioTrack.enabled = !audioTrack.enabled;
+  }
 };
