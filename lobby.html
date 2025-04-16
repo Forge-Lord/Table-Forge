@@ -1,61 +1,39 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-  <meta charset="UTF-8" />
   <title>Table Forge Lobby</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <link rel="stylesheet" href="style.css" />
+  <style>
+    body { background: #111; color: white; font-family: sans-serif; text-align: center; margin-top: 60px; }
+    input, button, select { font-size: 16px; padding: 10px; margin: 10px; width: 250px; max-width: 90%; }
+  </style>
 </head>
 <body>
-  <div class="top-bar">
-    Logged in as: <span id="profileName">...</span>
-    <button id="logoutBtn">Logout</button>
-  </div>
+  <h1>Create or Join a Room</h1>
 
-  <main>
-    <h1>Create or Join a Table</h1>
+  <h3>Create Room</h3>
+  <input id="name" placeholder="Your Name" /> <br />
+  <input id="roomName" placeholder="Room Name (Optional)" /> <br />
+  <label>Choose Template:</label>
+  <select id="template">
+    <option value="commander">Commander</option>
+    <option value="yugioh">Yu-Gi-Oh!</option>
+    <option value="digimon">Digimon</option>
+  </select> <br />
+  <label>Number of Players:</label>
+  <select id="playerCount">
+    <option value="2">2</option>
+    <option value="3">3</option>
+    <option value="4">4</option>
+  </select> <br />
+  <button onclick="createRoom()">Create Room</button>
 
-    <section>
-      <h2>Create Room</h2>
-      <input id="roomName" placeholder="Room Name (Optional)" />
-      <label>Game Template:</label>
-      <select id="template">
-        <option value="commander">Commander</option>
-        <option value="yugioh">Yu-Gi-Oh!</option>
-        <option value="digimon">Digimon</option>
-      </select>
-      <label>Player Count:</label>
-      <select id="playerCount">
-        <option value="2">2</option>
-        <option value="3">3</option>
-        <option value="4">4</option>
-      </select>
-      <button onclick="createRoom()">Create Room</button>
-    </section>
-
-    <section>
-      <h2>Join Room</h2>
-      <input id="roomCode" placeholder="Room Code (e.g., room-abc123)" />
-      <button onclick="joinRoom()">Join Room</button>
-    </section>
-
-    <section id="lobbyView" style="display: none;">
-      <h2>Room: <span id="roomDisplay"></span></h2>
-      <div id="playerList"></div>
-      <button id="startGameBtn" onclick="startGame()" style="display:none;">Start Game</button>
-      <button onclick="flipCamera()">Flip Camera</button>
-    </section>
-  </main>
-
-  <!-- Auth + Realtime Setup -->
-  <script type="module">
-    import { requireLogin, logout } from './auth.js';
-    requireLogin();
-
-    document.getElementById("logoutBtn").addEventListener("click", logout);
-    document.getElementById("profileName").textContent = localStorage.getItem("displayName") || "Unknown";
+  <script type="module" src="script.js"></script>
+  <script>
+    window.addEventListener("DOMContentLoaded", () => {
+      const saved = localStorage.getItem("displayName");
+      if (saved) document.getElementById("name").value = saved;
+    });
   </script>
-
-  <script type="module" src="./script.js"></script>
 </body>
 </html>
