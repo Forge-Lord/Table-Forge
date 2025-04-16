@@ -1,11 +1,5 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-app.js";
-import {
-  getDatabase,
-  ref,
-  set,
-  update,
-  onValue
-} from "https://www.gstatic.com/firebasejs/9.22.0/firebase-database.js";
+import { getDatabase, ref, set, onValue, update } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-database.js";
 
 const firebaseConfig = {
   apiKey: "AIzaSyBzvVpMCdg3Y6i5vCGWarorcTmzBzjmPow",
@@ -26,104 +20,33 @@ function makeCode(length = 5) {
 }
 
 window.createRoom = async function () {
+  const name = document.getElementById("name").value.trim();
   const roomName = document.getElementById("roomName").value.trim();
   const template = document.getElementById("template").value;
   const playerCount = parseInt(document.getElementById("playerCount").value);
-  const displayName = localStorage.getItem("displayName");
+  if (!name) return alert("Please enter your name");
 
-  if (!displayName) return alert("Not logged in.");
+  localStorage.setItem("displayName", name);
 
   const roomId = "room-" + makeCode();
-  const roomRef = ref(db, `rooms/${roomId}`);
   const seatMap = { 2: ["p1", "p2"], 3: ["p1", "p2", "p3"], 4: ["p1", "p2", "p3", "p4"] };
 
-  await set(roomRef, {
+  await set(ref(db, `rooms/${roomId}`), {
     roomName: roomName || null,
     template,
     playerCount,
-    host: displayName,
+    host: name,
     started: false,
     players: {
-      [displayName]: {
-        name: displayName,
-        seat: seatMap[playerCount][0],
+      [name]: {
+        name,
         life: template === "commander" ? 40 : 8000,
+        commander: 0,
         status: "",
-        commander: 0
+        seat: seatMap[playerCount][0]
       }
     }
   });
 
-  joinLobby(roomId);
-};
-
-window.joinRoom = function () {
-  const roomCode = document.getElementById("roomCode").value.trim();
-  if (!roomCode) return alert("Please enter a room code.");
-
-  const roomId = roomCode.startsWith("room-") ? roomCode : `room-${roomCode}`;
-  joinLobby(roomId);
-};
-
-function joinLobby(roomId) {
-  currentRoom = roomId;
-  currentName = localStorage.getItem("displayName") || "";
-
-  document.getElementById("preGame").style.display = "none";
-  document.getElementById("lobbyView").style.display = "block";
-  document.getElementById("roomDisplay").textContent = roomId;
-
-  const roomRef = ref(db, `rooms/${roomId}`);
-  const seatKeys = ["p1", "p2", "p3", "p4"];
-
-  onValue(roomRef, snap => {
-    const data = snap.val();
-    if (!data) return;
-
-    const playerList = document.getElementById("playerList");
-    playerList.innerHTML = "";
-
-    const players = data.players || {};
-    const usedSeats = Object.values(players).map(p => p.seat);
-
-    for (const pname in players) {
-      const p = players[pname];
-      const entry = document.createElement("div");
-      entry.className = "player-entry";
-      entry.textContent = `${p.seat.toUpperCase()} - ${p.name}`;
-      playerList.appendChild(entry);
-    }
-
-    // Join if not in yet
-    if (!players[currentName]) {
-      const openSeat = seatKeys.find(s => !usedSeats.includes(s));
-      if (!openSeat) return alert("Room full.");
-      update(ref(db, `rooms/${roomId}/players/${currentName}`), {
-        name: currentName,
-        seat: openSeat,
-        life: data.template === "commander" ? 40 : 8000,
-        status: "",
-        commander: 0
-      });
-    }
-
-    if (data.host === currentName && !data.started) {
-      document.getElementById("startGameBtn").style.display = "inline-block";
-    }
-
-    if (data.started) {
-      window.location.href = `/overlay.html?room=${roomId}`;
-    }
-  });
-}
-
-window.startGame = function () {
-  if (currentRoom) {
-    update(ref(db, `rooms/${currentRoom}`), { started: true });
-  }
-};
-
-window.flipCamera = function () {
-  const current = localStorage.getItem("cameraFacingMode") || "user";
-  localStorage.setItem("cameraFacingMode", current === "user" ? "environment" : "user");
+  window.location.href = `/overlay.html?room=${roomId}`;
 };
