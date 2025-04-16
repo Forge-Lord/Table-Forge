@@ -1,23 +1,69 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <title>Join Table Forge Room</title>
+  <meta charset="UTF-8" />
+  <title>Join a Table</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <link rel="stylesheet" href="style.css" />
+  <style>
+    body {
+      background-color: #111;
+      color: white;
+      font-family: sans-serif;
+      text-align: center;
+      margin-top: 100px;
+    }
+
+    input {
+      margin: 10px;
+      padding: 10px;
+      font-size: 16px;
+      width: 260px;
+    }
+
+    button {
+      margin-top: 20px;
+      padding: 12px 24px;
+      font-size: 16px;
+      background-color: #333;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+
+    button:hover {
+      background-color: #555;
+    }
+
+    #error {
+      margin-top: 15px;
+      color: #f55;
+    }
+  </style>
 </head>
 <body>
-  <div class="centered">
-    <h2>Join a Room</h2>
-    <input id="roomCode" placeholder="Enter Room Code" />
-    <button onclick="go()">Join</button>
-  </div>
+  <h1>Join a Table</h1>
+
+  <input type="text" id="displayName" placeholder="Your Name" /><br />
+  <input type="text" id="roomCode" placeholder="Room Code (e.g., room-abc123)" /><br />
+
+  <button onclick="join()">Join</button>
+
+  <div id="error"></div>
 
   <script>
-    function go() {
-      const code = document.getElementById("roomCode").value.trim();
-      if (!code) return alert("Please enter a room code.");
-      const room = code.startsWith("room-") ? code : "room-" + code;
-      window.location.href = "/overlay.html?room=" + room;
+    function join() {
+      const name = document.getElementById("displayName").value.trim();
+      const room = document.getElementById("roomCode").value.trim().toLowerCase();
+      const error = document.getElementById("error");
+
+      if (!name || !room) {
+        error.textContent = "Please fill out both fields.";
+        return;
+      }
+
+      localStorage.setItem("displayName", name);
+      window.location.href = "/lobby.html?room=" + encodeURIComponent(room);
     }
   </script>
 </body>
