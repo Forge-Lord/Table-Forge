@@ -1,5 +1,11 @@
 {
+  "name": "tableforge",
+  "version": "1.0.0",
+  "description": "Table Forge - Multiplayer TCG Overlay System",
+  "scripts": {
+    "start": "serve ."
+  },
   "dependencies": {
-    "firebase": "^11.6.0"
+    "serve": "^14.2.0"
   }
 }
