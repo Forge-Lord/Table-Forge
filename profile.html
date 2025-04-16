@@ -20,7 +20,7 @@
     button {
       padding: 10px 20px;
       font-size: 16px;
-      margin-top: 12px;
+      margin: 10px;
     }
     #message {
       color: #f55;
@@ -34,7 +34,8 @@
   <input type="text" id="displayName" placeholder="Display Name" /><br />
   <input type="email" id="email" placeholder="Email" /><br />
   <input type="password" id="password" placeholder="Password" /><br />
-  <button onclick="confirmIdentity()">Confirm Identity</button>
+  <button onclick="login()">Log In</button>
+  <button onclick="createAccount()">Create Account</button>
   <div id="message"></div>
 
   <script type="module">
@@ -48,42 +49,44 @@
       setDoc
     } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js";
 
-    async function confirmIdentity() {
-      const displayName = document.getElementById("displayName").value.trim();
+    const message = document.getElementById("message");
+
+    async function login() {
       const email = document.getElementById("email").value.trim();
       const password = document.getElementById("password").value;
-      const message = document.getElementById("message");
+      const displayName = document.getElementById("displayName").value.trim();
       message.textContent = "";
 
-      if (!displayName || !email || !password) {
-        message.textContent = "Please fill out all fields.";
-        return;
-      }
-
       try {
-        const userCred = await signInWithEmailAndPassword(auth, email, password);
+        await signInWithEmailAndPassword(auth, email, password);
         localStorage.setItem("displayName", displayName);
         window.location.href = "lobby.html";
       } catch (err) {
-        if (err.code === "auth/user-not-found") {
-          try {
-            const userCred = await createUserWithEmailAndPassword(auth, email, password);
-            await setDoc(doc(db, "users", userCred.user.uid), {
-              displayName,
-              createdAt: new Date()
-            });
-            localStorage.setItem("displayName", displayName);
-            window.location.href = "lobby.html";
-          } catch (signupErr) {
-            message.textContent = "Signup error: " + signupErr.message;
-          }
-        } else {
-          message.textContent = "Login error: " + err.message;
-        }
+        message.textContent = "Login error: " + err.message;
       }
     }
 
-    window.confirmIdentity = confirmIdentity;
+    async function createAccount() {
+      const email = document.getElementById("email").value.trim();
+      const password = document.getElementById("password").value;
+      const displayName = document.getElementById("displayName").value.trim();
+      message.textContent = "";
+
+      try {
+        const userCred = await createUserWithEmailAndPassword(auth, email, password);
+        await setDoc(doc(db, "users", userCred.user.uid), {
+          displayName,
+          createdAt: new Date()
+        });
+        localStorage.setItem("displayName", displayName);
+        window.location.href = "lobby.html";
+      } catch (err) {
+        message.textContent = "Signup error: " + err.message;
+      }
+    }
+
+    window.login = login;
+    window.createAccount = createAccount;
   </script>
 </body>
 </html>
