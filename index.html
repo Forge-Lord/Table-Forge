@@ -4,13 +4,57 @@
   <meta charset="UTF-8" />
   <title>Table Forge</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <link rel="stylesheet" href="style.css" />
+  <style>
+    body {
+      background: #111;
+      color: #eee;
+      font-family: sans-serif;
+      text-align: center;
+      padding-top: 100px;
+      margin: 0;
+    }
+
+    h1 {
+      font-size: 2.5em;
+      margin-bottom: 0.5em;
+    }
+
+    p {
+      font-size: 1.2em;
+      margin-bottom: 2em;
+    }
+
+    button {
+      padding: 12px 24px;
+      font-size: 16px;
+      background: #333;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+
+    button:hover {
+      background: #555;
+    }
+
+    footer {
+      position: fixed;
+      bottom: 20px;
+      width: 100%;
+      text-align: center;
+      font-size: 0.9em;
+      color: #666;
+    }
+  </style>
 </head>
 <body>
-  <div class="centered">
-    <h1>Welcome to Table Forge</h1>
-    <p>Your battleground for multiplayer TCGs</p>
-    <a href="profile.html"><button>Enter the Forge</button></a>
-  </div>
+  <h1>Welcome to Table Forge</h1>
+  <p>Join your friends and play TCGs with real-time video and overlays.</p>
+  <button onclick="window.location.href='/profile.html'">Sign In to Continue</button>
+
+  <footer>
+    &copy; 2025 Table Forge – Powered by the Forge Spirit
+  </footer>
 </body>
 </html>
