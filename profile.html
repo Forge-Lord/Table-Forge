@@ -2,15 +2,42 @@
 <html>
 <head>
   <title>Forge Identity</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    body {
+      background-color: #111;
+      color: white;
+      font-family: sans-serif;
+      text-align: center;
+      padding-top: 80px;
+    }
+    input {
+      margin: 10px;
+      padding: 10px;
+      font-size: 16px;
+      width: 250px;
+    }
+    button {
+      padding: 10px 20px;
+      font-size: 16px;
+    }
+    #msg {
+      margin-top: 20px;
+      color: #f55;
+    }
+  </style>
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
 </head>
-<body style="background:#111; color:white; text-align:center; padding-top:80px;">
+<body>
   <h1>Forge Identity</h1>
-  <input id="displayName" placeholder="Display Name" /><br />
-  <input id="password" type="password" placeholder="Password (min 6 chars)" /><br />
-  <button onclick="confirm()">Go</button>
-  <div id="msg" style="margin-top:1em;color:#f55;"></div>
+  <p>* Email is required for sign-in. Display name is how you'll appear in-game.</p>
+  <input id="displayName" placeholder="Display Name (Shown in game)" /><br>
+  <input id="email" placeholder="Email Address" /><br>
+  <input id="password" type="password" placeholder="Password" /><br>
+  <button onclick="confirmIdentity()">Confirm Identity</button>
+  <div id="msg"></div>
 
   <script>
     const firebaseConfig = {
@@ -18,40 +45,46 @@
       authDomain: "tableforge-app.firebaseapp.com",
       projectId: "tableforge-app"
     };
+
     firebase.initializeApp(firebaseConfig);
     const auth = firebase.auth();
+    const db = firebase.firestore();
 
-    function sanitize(name) {
-      return name.toLowerCase().replace(/[^a-z0-9]/gi, "_");
-    }
+    async function confirmIdentity() {
+      const name = document.getElementById('displayName').value.trim();
+      const email = document.getElementById('email').value.trim();
+      const password = document.getElementById('password').value;
+      const msg = document.getElementById('msg');
 
-    async function confirm() {
-      const rawName = document.getElementById("displayName").value.trim();
-      const password = document.getElementById("password").value;
-      const email = `forge_${sanitize(rawName)}@forge.app`;
-      const msg = document.getElementById("msg");
       msg.textContent = "";
 
-      if (!rawName || password.length < 6) {
-        msg.textContent = "Please use a valid name and 6+ char password.";
+      if (!name || !email || !password) {
+        msg.textContent = "Please fill out all fields.";
         return;
       }
 
       try {
-        await auth.signInWithEmailAndPassword(email, password);
-        localStorage.setItem("displayName", rawName);
+        const userCred = await auth.signInWithEmailAndPassword(email, password);
+        localStorage.setItem("displayName", name);
         window.location.href = "/lobby.html";
-      } catch (err) {
-        if (err.code === "auth/user-not-found") {
+      } catch (loginErr) {
+        if (loginErr.code === "auth/user-not-found") {
           try {
-            await auth.createUserWithEmailAndPassword(email, password);
-            localStorage.setItem("displayName", rawName);
-            window.location.href = "/lobby.html";
-          } catch (createErr) {
-            msg.textContent = "Signup error: " + createErr.message;
+            const newUser = await auth.createUserWithEmailAndPassword(email, password);
+            await db.collection("users").doc(newUser.user.uid).set({
+              displayName: name,
+              email,
+              createdAt: new Date()
+            });
+            localStorage.setItem("displayName", name);
+            msg.style.color = "#0f0";
+            msg.textContent = "Account created! Redirecting...";
+            setTimeout(() => window.location.href = "/lobby.html", 1000);
+          } catch (signupErr) {
+            msg.textContent = "Signup failed: " + signupErr.message;
           }
         } else {
-          msg.textContent = "Login error: " + err.message;
+          msg.textContent = "Login failed: " + loginErr.message;
         }
       }
     }
