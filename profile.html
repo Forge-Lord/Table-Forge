@@ -53,46 +53,44 @@
     firebase.initializeApp(firebaseConfig);
     const auth = firebase.auth();
 
-    function sanitizeName(name) {
-      return name.toLowerCase().replace(/[^a-z0-9]/g, '_');
+    function sanitize(name) {
+      return name.trim().toLowerCase().replace(/[^a-z0-9]/g, "_");
     }
 
-    function confirmIdentity() {
-      const displayName = document.getElementById('displayName').value.trim();
-      const password = document.getElementById('password').value;
-      const messageDiv = document.getElementById('message');
-
-      messageDiv.textContent = '';
+    async function confirmIdentity() {
+      const displayName = document.getElementById("displayName").value.trim();
+      const password = document.getElementById("password").value;
+      const msg = document.getElementById("message");
+      msg.textContent = "";
 
       if (!displayName || !password) {
-        messageDiv.textContent = "Please enter both a display name and password.";
+        msg.textContent = "Please enter both a display name and password.";
         return;
       }
 
-      const cleanName = sanitizeName(displayName);
-      const email = `forge_${cleanName}@forge.app`;
+      const email = `forge_${sanitize(displayName)}@forge.app`;
+      console.log("Using email:", email);
 
-      auth.signInWithEmailAndPassword(email, password)
-        .then(() => {
-          localStorage.setItem("displayName", displayName);
-          window.location.href = "/lobby.html";
-        })
-        .catch(error => {
-          if (error.code === 'auth/user-not-found') {
-            auth.createUserWithEmailAndPassword(email, password)
-              .then(() => {
-                localStorage.setItem("displayName", displayName);
-                messageDiv.style.color = "#0f0";
-                messageDiv.textContent = "✨ Account created! Redirecting...";
-                setTimeout(() => window.location.href = "/lobby.html", 1000);
-              })
-              .catch(createErr => {
-                messageDiv.textContent = "Signup failed: " + createErr.message;
-              });
-          } else {
-            messageDiv.textContent = "Login failed: " + error.message;
+      try {
+        await auth.signInWithEmailAndPassword(email, password);
+        localStorage.setItem("displayName", displayName);
+        window.location.href = "/lobby.html";
+      } catch (err) {
+        if (err.code === "auth/user-not-found") {
+          // Try to create new account
+          try {
+            await auth.createUserWithEmailAndPassword(email, password);
+            localStorage.setItem("displayName", displayName);
+            msg.style.color = "#0f0";
+            msg.textContent = "✨ Account created! Redirecting...";
+            setTimeout(() => window.location.href = "/lobby.html", 1000);
+          } catch (createErr) {
+            msg.textContent = "Signup failed: " + createErr.message;
           }
-        });
+        } else {
+          msg.textContent = "Login failed: " + err.message;
+        }
+      }
     }
   </script>
 </body>
