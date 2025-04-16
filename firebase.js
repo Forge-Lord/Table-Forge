@@ -1,5 +1,5 @@
-// firebase.js
-import { initializeApp, getApps, getApp } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-app.js";
+import { initializeApp, getApps } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-app.js";
+import { getAuth } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-auth.js";
 import { getDatabase } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-database.js";
 
 const firebaseConfig = {
@@ -9,7 +9,8 @@ const firebaseConfig = {
   projectId: "tableforge-app"
 };
 
-const app = getApps().length ? getApp() : initializeApp(firebaseConfig);
+const app = getApps().length ? getApps()[0] : initializeApp(firebaseConfig);
+const auth = getAuth(app);
 const db = getDatabase(app);
 
-export { app, db };
+export { app, auth, db };
