@@ -22,7 +22,12 @@ const displayName = localStorage.getItem("displayName") || "Unknown";
 const layout = document.getElementById("overlayGrid");
 if (!layout) console.error("❌ overlayGrid element not found");
 
-const seatMap = { p1: "top-left", p2: "top-right", p3: "bottom-left", p4: "bottom-right" };
+const seatMap = {
+  p1: "top-left",
+  p2: "top-right",
+  p3: "bottom-left",
+  p4: "bottom-right"
+};
 
 onValue(ref(db, `rooms/${roomId}`), snap => {
   try {
@@ -34,7 +39,9 @@ onValue(ref(db, `rooms/${roomId}`), snap => {
     const template = data.template || "commander";
     const playerCount = Object.keys(players).length;
 
-    layout.style.gridTemplate = playerCount === 2 ? "1fr / 1fr" : "1fr 1fr / 1fr 1fr";
+    layout.style.gridTemplate = playerCount === 2
+      ? "1fr / 1fr"
+      : "1fr 1fr / 1fr 1fr";
 
     Object.values(players).forEach(player => {
       const seat = player.seat;
