@@ -1,1 +1,24 @@
-<html><body><h1>Join Room</h1></body></html>
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Join Table Forge Room</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div class="centered">
+    <h2>Join a Room</h2>
+    <input id="roomCode" placeholder="Enter Room Code" />
+    <button onclick="go()">Join</button>
+  </div>
+
+  <script>
+    function go() {
+      const code = document.getElementById("roomCode").value.trim();
+      if (!code) return alert("Please enter a room code.");
+      const room = code.startsWith("room-") ? code : "room-" + code;
+      window.location.href = "/overlay.html?room=" + room;
+    }
+  </script>
+</body>
+</html>
