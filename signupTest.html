@@ -1,8 +1,37 @@
 <!DOCTYPE html>
 <html>
-<head><title>Test Firebase SignUp</title></head>
-<body style="background:#111; color:white; font-family:sans-serif;">
-  <h1>Running Forge Signup Test…</h1>
+<head>
+  <title>Signup Test</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <style>
+    body {
+      background-color: #111;
+      color: white;
+      font-family: sans-serif;
+      text-align: center;
+      padding-top: 80px;
+    }
+    input, button {
+      margin: 10px;
+      padding: 10px;
+      font-size: 16px;
+      width: 240px;
+    }
+    #message {
+      margin-top: 20px;
+      color: #f55;
+    }
+  </style>
+</head>
+<body>
+  <h1>Forge Identity Test</h1>
+  <input type="text" id="displayName" placeholder="Display Name" /><br />
+  <input type="password" id="password" placeholder="Password" /><br />
+  <button onclick="loginOrRegister()">Log In / Register</button>
+  <div id="message"></div>
+
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
   <script type="module" src="./signupTest.js"></script>
 </body>
 </html>
