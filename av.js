@@ -1,100 +1,93 @@
-let currentStream = null;
-let currentVideo = null;
-
-export async function setupAVMesh(players, currentName, roomId) {
+export function setupAVMesh(players, currentName, roomId) {
   console.log("🔌 Setting up AV mesh for", currentName, "in", roomId);
+
   const player = players.find(p => p.name === currentName);
-  if (!player) return console.warn("⚠️ Player not found:", currentName);
-
-  const seat = player.seat;
-  const videoEl = document.getElementById(`video-${seat}`);
-  const uiBox = document.querySelector(`#seat-${seat} .player-ui`);
-
-  if (!videoEl || !uiBox) {
-    console.warn("❌ Missing elements for local player UI. Retrying...");
-    setTimeout(() => setupAVMesh(players, currentName, roomId), 500);
+  const localVideo = document.getElementById(`video-${player?.seat}`);
+  if (!localVideo) {
+    console.warn("🎥 Local video slot not found");
     return;
   }
 
-  currentVideo = videoEl;
+  const camSelectId = `cam-select-${player.seat}`;
+  const muteBtnId = `mute-btn-${player.seat}`;
+  const pauseBtnId = `pause-btn-${player.seat}`;
 
-  // === Device Selector ===
-  const dropdown = document.createElement("select");
-  dropdown.style.marginTop = "6px";
-  dropdown.style.fontSize = "12px";
+  // Camera and mic state
+  let currentStream = null;
+  let isMicMuted = false;
+  let isCamPaused = false;
 
-  const devices = await navigator.mediaDevices.enumerateDevices();
-  const videoInputs = devices.filter(d => d.kind === "videoinput");
-  const savedDeviceId = localStorage.getItem("preferredCamera");
+  // UI elements
+  const camSelect = document.createElement("select");
+  camSelect.id = camSelectId;
+  camSelect.style.marginTop = "6px";
 
-  videoInputs.forEach(device => {
-    const option = document.createElement("option");
-    option.value = device.deviceId;
-    option.text = device.label || `Camera ${dropdown.length + 1}`;
-    if (device.deviceId === savedDeviceId) option.selected = true;
-    dropdown.appendChild(option);
+  const muteBtn = document.createElement("button");
+  muteBtn.id = muteBtnId;
+  muteBtn.textContent = "Mute Mic";
+
+  const pauseBtn = document.createElement("button");
+  pauseBtn.id = pauseBtnId;
+  pauseBtn.textContent = "Pause Cam";
+
+  localVideo.parentNode.appendChild(camSelect);
+  localVideo.parentNode.appendChild(muteBtn);
+  localVideo.parentNode.appendChild(pauseBtn);
+
+  // Populate camera options
+  navigator.mediaDevices.enumerateDevices().then(devices => {
+    const videoInputs = devices.filter(d => d.kind === "videoinput");
+    videoInputs.forEach(device => {
+      const option = document.createElement("option");
+      option.value = device.deviceId;
+      option.textContent = device.label || `Camera ${camSelect.length + 1}`;
+      camSelect.appendChild(option);
+    });
+
+    // Select saved camera or default
+    const savedCam = localStorage.getItem("preferredCamera");
+    if (savedCam && [...camSelect.options].some(opt => opt.value === savedCam)) {
+      camSelect.value = savedCam;
+    }
+
+    startStream(camSelect.value);
   });
 
-  dropdown.addEventListener("change", () => {
-    const selectedId = dropdown.value;
-    localStorage.setItem("preferredCamera", selectedId);
-    startStream(selectedId, videoEl);
-  });
+  function startStream(deviceId) {
+    if (currentStream) {
+      currentStream.getTracks().forEach(track => track.stop());
+    }
 
-  uiBox.appendChild(dropdown);
-
-  // === Mic & Cam Toggles ===
-  const micBtn = document.createElement("button");
-  micBtn.textContent = "Mute Mic";
-  micBtn.style.marginTop = "4px";
-  micBtn.onclick = toggleMic;
-
-  const camBtn = document.createElement("button");
-  camBtn.textContent = "Pause Cam";
-  camBtn.style.marginTop = "4px";
-  camBtn.onclick = toggleCam;
-
-  uiBox.appendChild(micBtn);
-  uiBox.appendChild(camBtn);
-
-  const startId = dropdown.value || videoInputs[0]?.deviceId;
-  if (startId) startStream(startId, videoEl);
-}
-
-// === Start stream with specific cam ===
-function startStream(deviceId, videoEl) {
-  if (currentStream) {
-    currentStream.getTracks().forEach(track => track.stop());
+    navigator.mediaDevices.getUserMedia({
+      video: { deviceId: { exact: deviceId } },
+      audio: true
+    }).then(stream => {
+      currentStream = stream;
+      localVideo.srcObject = stream;
+      localVideo.muted = true;
+      localStorage.setItem("preferredCamera", deviceId);
+      console.log("🎥 Stream started with", deviceId);
+    }).catch(err => {
+      console.error("❌ Error accessing camera/mic:", err);
+    });
   }
 
-  navigator.mediaDevices.getUserMedia({
-    video: { deviceId: { exact: deviceId } },
-    audio: true
-  }).then(stream => {
-    currentStream = stream;
-    videoEl.srcObject = stream;
-    videoEl.muted = true;
-    videoEl.play();
-    console.log("✅ Stream started with device:", deviceId);
-  }).catch(err => {
-    console.error("❌ Failed to start stream:", err);
+  camSelect.addEventListener("change", () => {
+    const selectedDevice = camSelect.value;
+    startStream(selectedDevice);
+  });
+
+  muteBtn.addEventListener("click", () => {
+    if (!currentStream) return;
+    isMicMuted = !isMicMuted;
+    currentStream.getAudioTracks().forEach(t => t.enabled = !isMicMuted);
+    muteBtn.textContent = isMicMuted ? "Unmute Mic" : "Mute Mic";
+  });
+
+  pauseBtn.addEventListener("click", () => {
+    if (!currentStream) return;
+    isCamPaused = !isCamPaused;
+    currentStream.getVideoTracks().forEach(t => t.enabled = !isCamPaused);
+    pauseBtn.textContent = isCamPaused ? "Resume Cam" : "Pause Cam";
   });
 }
-
-// === Toggle mic ===
-window.toggleMic = function () {
-  if (!currentStream) return;
-  const track = currentStream.getAudioTracks()[0];
-  if (!track) return;
-  track.enabled = !track.enabled;
-  console.log(track.enabled ? "🎙️ Mic on" : "🔇 Mic muted");
-};
-
-// === Toggle cam ===
-window.toggleCam = function () {
-  if (!currentStream) return;
-  const track = currentStream.getVideoTracks()[0];
-  if (!track) return;
-  track.enabled = !track.enabled;
-  console.log(track.enabled ? "📷 Cam on" : "📷 Cam paused");
-};
