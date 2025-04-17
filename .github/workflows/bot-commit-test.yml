@@ -1,28 +1,31 @@
-name: ForgeSoul Bot Test Commit
+name: ForgeSoul Bot Push
 
 on:
   workflow_dispatch:
 
 jobs:
-  commit-test:
+  push-with-app-token:
     runs-on: ubuntu-latest
 
     steps:
-    - name: Checkout repository
+    - name: Checkout
       uses: actions/checkout@v3
 
-    - name: Create test file
-      run: echo "Hello from ForgeSoul Bot" > hello-forge-spirit.txt
+    - name: Generate GitHub App Token
+      id: generate_token
+      uses: tibdex/github-app-token@v1
+      with:
+        app_id: ${{ secrets.FORGESOUL_APP_ID }}
+        installation_id: ${{ secrets.FORGESOUL_INSTALLATION_ID }}
+        private_key: ${{ secrets.FORGESOUL_PRIVATE_KEY }}
 
-    - name: Configure Git identity
+    - name: Create File
+      run: echo "Bot reawakening $(date)" > forge-spirit-signal.txt
+
+    - name: Commit and Push
       run: |
         git config user.name "ForgeSoul Bot"
         git config user.email "forgesoul@example.com"
-
-    - name: Commit file
-      run: |
-        git add hello-forge-spirit.txt
-        git commit -m "ForgeSoul Bot test commit"
-        git push
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        git add forge-spirit-signal.txt
+        git commit -m "ForgeSoul Bot reawakens"
+        git push https://x-access-token:${{ steps.generate_token.outputs.token }}@github.com/${{ secrets.REPO_NAME }}.git HEAD:main
