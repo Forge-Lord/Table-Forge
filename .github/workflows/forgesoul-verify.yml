@@ -1,0 +1,25 @@
+name: ForgeSoulBot Verification
+
+on:
+  workflow_dispatch:
+
+jobs:
+  verify-app-access:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: Generate GitHub App Token
+        id: generate_token
+        uses: tibdex/github-app-token@v1
+        with:
+          app_id: ${{ secrets.FORGESOUL_APP_ID }}
+          installation_id: ${{ secrets.FORGESOUL_INSTALLATION_ID }}
+          private_key: ${{ secrets.FORGESOUL_PRIVATE_KEY }}
+
+      - name: Log Token and Repo Access
+        run: |
+          echo "Actor: ${{ github.actor }}"
+          echo "Token Length: ${#{{ steps.generate_token.outputs.token }}}"
+          echo "Repo Slug: ${{ github.repository }}"
