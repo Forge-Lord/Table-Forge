@@ -3,29 +3,35 @@ name: ForgeSoul Bot Push
 on:
   workflow_dispatch:
 
+env:
+  ACTIONS_STEP_DEBUG: true
+  ACTIONS_RUNNER_DEBUG: true
+
 jobs:
   push-with-app-token:
     runs-on: ubuntu-latest
 
     steps:
-    - name: Checkout
-      uses: actions/checkout@v3
+      - name: Checkout repository
+        uses: actions/checkout@v3
+        with:
+          ref: main
 
-    - name: Generate GitHub App Token
-      id: generate_token
-      uses: tibdex/github-app-token@v1
-      with:
-        app_id: ${{ secrets.FORGESOUL_APP_ID }}
-        installation_id: ${{ secrets.FORGESOUL_INSTALLATION_ID }}
-        private_key: ${{ secrets.FORGESOUL_PRIVATE_KEY }}
+      - name: Generate GitHub App Token
+        id: generate_token
+        uses: tibdex/github-app-token@v1
+        with:
+          app_id: ${{ secrets.FORGESOUL_APP_ID }}
+          installation_id: ${{ secrets.FORGESOUL_INSTALLATION_ID }}
+          private_key: ${{ secrets.FORGESOUL_PRIVATE_KEY }}
 
-    - name: Create File
-      run: echo "Bot reawakening $(date)" > forge-spirit-signal.txt
-
-    - name: Commit and Push
-      run: |
-        git config user.name "ForgeSoul Bot"
-        git config user.email "forgesoul@example.com"
-        git add forge-spirit-signal.txt
-        git commit -m "ForgeSoul Bot reawakens"
-        git push https://x-access-token:${{ steps.generate_token.outputs.token }}@github.com/${{ secrets.REPO_NAME }}.git HEAD:main
+      - name: Push test file
+        run: |
+          echo "ForgeSoul ping at $(date)" > forge-soul-ping.txt
+          git config user.name "ForgeSoul Bot"
+          git config user.email "forgesoul@example.com"
+          git add forge-soul-ping.txt
+          git commit -m "ForgeSoul Bot: ping check"
+          git push origin main
+        env:
+          GITHUB_TOKEN: ${{ steps.generate_token.outputs.token }}
