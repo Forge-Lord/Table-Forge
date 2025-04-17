@@ -1,11 +1,12 @@
-name: ForgeSoulBot Verification
+name: ForgeSoulBot Hybrid Test
 
 on:
   workflow_dispatch:
 
 jobs:
-  verify-app-access:
+  bot-access-test:
     runs-on: ubuntu-latest
+
     steps:
       - name: Checkout
         uses: actions/checkout@v3
@@ -18,8 +19,18 @@ jobs:
           installation_id: ${{ secrets.FORGESOULBOT_INSTALLATION_ID }}
           private_key: ${{ secrets.FORGESOULBOT_PRIVATE_KEY }}
 
-      - name: Log Token and Repo Access
+      - name: Create test file
+        run: echo "Hello from ForgeSoulBot Hybrid Test" > forge-verified.txt
+
+      - name: Configure Git
         run: |
-          echo "Actor: ${{ github.actor }}"
-          echo "Token Length: ${#{{ steps.generate_token.outputs.token }}}"
-          echo "Repo Slug: ${{ github.repository }}"
+          git config user.name "ForgeSoulBot"
+          git config user.email "forgesoulbot@example.com"
+
+      - name: Commit and push file
+        env:
+          TOKEN: ${{ steps.generate_token.outputs.token }}
+        run: |
+          git add forge-verified.txt
+          git commit -m "✅ ForgeSoulBot verified and functional"
+          git push https://x-access-token:${TOKEN}@github.com/${{ github.repository }}.git HEAD:main
