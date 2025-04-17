@@ -1,0 +1,30 @@
+name: ForgeSoulBot Auto Push
+
+on:
+  workflow_dispatch:  # You can trigger manually
+  schedule:
+    - cron: '*/30 * * * *'  # Optional: every 30 min auto-check-in
+
+jobs:
+  push-file:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: Generate GitHub App Token
+        id: generate_token
+        uses: tibdex/github-app-token@v1
+        with:
+          app_id: ${{ secrets.FORGESOULBOT_APP_ID }}
+          installation_id: ${{ secrets.FORGESOULBOT_INSTALLATION_ID }}
+          private_key: ${{ secrets.FORGESOULBOT_PRIVATE_KEY }}
+
+      - name: Add or Update Forge File
+        run: |
+          echo "Status: ForgeSoulBot has full auto-commit power 🚀" > forge-verification-check.txt
+          git config user.name "ForgeSoulBot"
+          git config user.email "bot@tableforge.app"
+          git add forge-verification-check.txt
+          git commit -m "✅ Verified: ForgeSoulBot auto commit test"
+          git push https://x-access-token:${{ steps.generate_token.outputs.token }}@github.com/${{ github.repository }}.git HEAD:main
