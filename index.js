@@ -7,7 +7,8 @@ import { Octokit } from "@octokit/rest";
 dotenv.config();
 
 const app = express();
-const PORT = process.env.PORT || 3000;
+// ✅ Must use Render's assigned port
+const PORT = process.env.PORT;
 
 // GitHub App Setup
 const octokitApp = new App({
@@ -39,7 +40,6 @@ webhooks.on("push", async ({ payload }) => {
     console.log("🔐 Installation Octokit authenticated.");
 
     const content = `# Witness Me\nThis file was created by ForgeSoul Bot.\n\n🔥 You have been noticed.`;
-
     const path = ".forge/witness-me.md";
 
     await octokit.repos.createOrUpdateFileContents({
