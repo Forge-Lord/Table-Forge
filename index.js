@@ -1,44 +1,44 @@
-import express from 'express';
-import { createNodeMiddleware } from '@octokit/webhooks';
-import pkg from '@octokit/webhooks-methods';
-import { App } from 'octokit';
-import dotenv from 'dotenv';
+import express from "express";
+import dotenv from "dotenv";
+import { App } from "@octokit/app";
+import { Webhooks, createNodeMiddleware } from "@octokit/webhooks";
 
 dotenv.config();
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-const { Webhooks } = pkg;
-
+// Octokit GitHub App setup
 const octokitApp = new App({
   appId: process.env.APP_ID,
   privateKey: process.env.PRIVATE_KEY,
   oauth: {
     clientId: process.env.CLIENT_ID,
-    clientSecret: process.env.CLIENT_SECRET,
+    clientSecret: process.env.CLIENT_SECRET
   },
   webhooks: {
-    secret: process.env.WEBHOOK_SECRET,
-  },
+    secret: process.env.WEBHOOK_SECRET
+  }
 });
 
+// Webhook listener
 const webhooks = new Webhooks({
-  secret: process.env.WEBHOOK_SECRET,
+  secret: process.env.WEBHOOK_SECRET
 });
 
-webhooks.on("push", async ({ payload }) => {
+webhooks.on("push", ({ payload }) => {
   const repo = payload.repository.full_name;
   const pusher = payload.pusher.name;
-  console.log(`🚀 ${pusher} pushed to ${repo}`);
+  console.log(`🛠️ ${pusher} pushed to ${repo}`);
 });
 
+// Middleware and startup
 app.use(createNodeMiddleware(webhooks));
 
 app.get("/", (_, res) => {
-  res.send("🛠️ ForgeSoul Bot is alive.");
+  res.send("ForgeSoul Bot is online and awaiting webhooks.");
 });
 
 app.listen(PORT, () => {
-  console.log(`🧠 ForgeSoul Bot running on port ${PORT}`);
+  console.log(`✅ ForgeSoul Bot running at http://localhost:${PORT}`);
 });
