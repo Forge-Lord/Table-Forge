@@ -30,18 +30,22 @@ webhooks.on("push", async ({ payload }) => {
   const repo = payload.repository.name;
   const owner = payload.repository.owner.login;
   const pusher = payload.pusher.name;
+  const branch = payload.ref.replace("refs/heads/", "");
 
-  console.log(`🛠️ ${pusher} pushed to ${owner}/${repo}`);
+  console.log(`🛠️ ${pusher} pushed to ${owner}/${repo} on ${branch}`);
 
   try {
     const octokit = await octokitApp.getInstallationOctokit(process.env.INSTALLATION_ID);
+    console.log("🔐 Installation Octokit authenticated.");
 
     const content = `# Witness Me\nThis file was created by ForgeSoul Bot.\n\n🔥 You have been noticed.`;
+
+    const path = ".forge/witness-me.md";
 
     await octokit.repos.createOrUpdateFileContents({
       owner,
       repo,
-      path: ".forge/witness-me.md",
+      path,
       message: "ForgeSoul Bot: Added witness-me file",
       content: Buffer.from(content).toString("base64"),
       committer: {
@@ -52,12 +56,12 @@ webhooks.on("push", async ({ payload }) => {
         name: "ForgeSoul Bot",
         email: "bot@tableforge.app"
       },
-      branch: payload.ref.replace("refs/heads/", "")
+      branch
     });
 
-    console.log("✅ witness-me.md committed successfully.");
+    console.log(`✅ File committed successfully: ${path}`);
   } catch (error) {
-    console.error("❌ Failed to commit witness-me.md:", error);
+    console.error("❌ Commit failed:", error.message || error);
   }
 });
 
