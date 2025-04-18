@@ -32,8 +32,8 @@ webhooks.on("push", ({ payload }) => {
   console.log(`🛠️ ${pusher} pushed to ${repo}`);
 });
 
-// Middleware and startup
-app.use(createNodeMiddleware(webhooks));
+// 👇 Make sure it listens on /github-webhook
+app.use("/github-webhook", createNodeMiddleware(webhooks));
 
 app.get("/", (_, res) => {
   res.send("ForgeSoul Bot is online and awaiting webhooks.");
