@@ -5,13 +5,13 @@
   "type": "module",
   "scripts": {
     "start": "serve .",
-    "bot": "node botsoul/index.js"
+    "bot": "node index.js"
   },
   "dependencies": {
     "serve": "^14.2.0",
     "express": "^4.18.2",
-    "dotenv": "^16.3.1",
-    "@octokit/webhooks": "^10.7.0",
-    "octokit": "^3.0.0"
+    "@octokit/webhooks": "^11.5.0",
+    "octokit": "^2.0.12",
+    "dotenv": "^16.3.1"
   }
 }
