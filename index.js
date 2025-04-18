@@ -2,13 +2,14 @@ import express from "express";
 import dotenv from "dotenv";
 import { App } from "@octokit/app";
 import { Webhooks, createNodeMiddleware } from "@octokit/webhooks";
+import { Octokit } from "octokit";
 
 dotenv.config();
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// Octokit GitHub App setup
+// GitHub App setup
 const octokitApp = new App({
   appId: process.env.APP_ID,
   privateKey: process.env.PRIVATE_KEY,
@@ -21,18 +22,46 @@ const octokitApp = new App({
   }
 });
 
-// Webhook listener
+// Webhook handler
 const webhooks = new Webhooks({
   secret: process.env.WEBHOOK_SECRET
 });
 
-webhooks.on("push", ({ payload }) => {
-  const repo = payload.repository.full_name;
-  const pusher = payload.pusher.name;
-  console.log(`🛠️ ${pusher} pushed to ${repo}`);
+webhooks.on("push", async ({ payload }) => {
+  const owner = payload.repository.owner.name || payload.repository.owner.login;
+  const repo = payload.repository.name;
+  const installationId = payload.installation.id;
+
+  console.log(`🛠️ ${payload.pusher.name} pushed to ${repo}`);
+
+  try {
+    const octokit = await octokitApp.getInstallationOctokit(installationId);
+
+    const { data: readme } = await octokit.rest.repos.getContent({
+      owner,
+      repo,
+      path: "README.md"
+    });
+
+    const updatedText = `## 🔥 ForgeSoul was here - ${new Date().toISOString()}`;
+    const updatedContent = Buffer.from(updatedText).toString("base64");
+
+    await octokit.rest.repos.createOrUpdateFileContents({
+      owner,
+      repo,
+      path: "README.md",
+      message: "ForgeSoul: auto-edit test",
+      content: updatedContent,
+      sha: readme.sha
+    });
+
+    console.log(`✅ ForgeSoul updated README.md in ${owner}/${repo}`);
+  } catch (err) {
+    console.error("❌ ForgeSoul failed:", err.message);
+  }
 });
 
-// 👇 Make sure it listens on /github-webhook
+// GitHub webhook listener
 app.use("/github-webhook", createNodeMiddleware(webhooks));
 
 app.get("/", (_, res) => {
