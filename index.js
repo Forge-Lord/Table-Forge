@@ -26,7 +26,7 @@ const webhooks = new Webhooks({
   secret: process.env.WEBHOOK_SECRET
 });
 
-// ✅ Handle push events
+// ✅ Push Event Handler
 webhooks.on("push", async ({ payload }) => {
   const repo = payload.repository.name;
   const owner = payload.repository.owner.login;
@@ -42,7 +42,7 @@ webhooks.on("push", async ({ payload }) => {
     const content = `# Witness Me\nThis file was created by ForgeSoul Bot.\n\n🔥 You have been noticed.`;
     const path = ".forge/witness-me.md";
 
-    await octokit.repos.createOrUpdateFileContents({
+    const result = await octokit.repos.createOrUpdateFileContents({
       owner,
       repo,
       path,
@@ -59,33 +59,35 @@ webhooks.on("push", async ({ payload }) => {
       branch
     });
 
-    console.log(`✅ Committed: ${path}`);
+    console.log(`✅ File committed: ${result.data.content.path}`);
   } catch (error) {
-    console.error("❌ Commit failed:", error.message || error);
+    console.error("❌ Commit failed:", error);
+    if (error.response) {
+      console.error("📬 GitHub API Response:", error.response.status, error.response.data);
+    }
   }
 });
 
-
-// 🧪 Diagnostic: log if POSTs reach the route
+// 🧪 POST diagnostic before forwarding
 app.post("/github-webhook", (req, res, next) => {
   console.log("🔥 /github-webhook POST received");
-  next(); // Pass to Octokit middleware
+  next(); // forward to middleware
 });
 
-// 🧪 Diagnostic: GET to confirm route is up
+// 🧪 Confirm GET on webhook route (optional browser test)
 app.get("/github-webhook", (_, res) => {
   res.send("🛠️ GitHub Webhook is active and listening.");
 });
 
-// Webhook handler
+// Webhook Middleware
 app.use("/github-webhook", createNodeMiddleware(webhooks));
 
-// Root page
+// Root
 app.get("/", (_, res) => {
   res.send("ForgeSoul Bot is online and awaiting webhooks.");
 });
 
-// Start server
+// Start Server
 app.listen(PORT, () => {
   console.log(`✅ ForgeSoul Bot running at http://localhost:${PORT}`);
 });
