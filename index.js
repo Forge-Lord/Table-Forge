@@ -9,7 +9,7 @@ dotenv.config();
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// Initialize GitHub App auth
+// GitHub App Setup
 const octokitApp = new App({
   appId: process.env.APP_ID,
   privateKey: process.env.PRIVATE_KEY,
@@ -17,7 +17,9 @@ const octokitApp = new App({
     clientId: process.env.CLIENT_ID,
     clientSecret: process.env.CLIENT_SECRET
   },
-  webhooks: { secret: process.env.WEBHOOK_SECRET }
+  webhooks: {
+    secret: process.env.WEBHOOK_SECRET
+  }
 });
 
 const webhooks = new Webhooks({
@@ -25,25 +27,22 @@ const webhooks = new Webhooks({
 });
 
 webhooks.on("push", async ({ payload }) => {
-  const repo = payload.repository.full_name;
+  const repo = payload.repository.name;
+  const owner = payload.repository.owner.login;
   const pusher = payload.pusher.name;
-  console.log(`🛠️ ${pusher} pushed to ${repo}`);
 
-  // Authenticate as the GitHub App installation
-  const installationId = process.env.INSTALLATION_ID;
-  const octokit = await octokitApp.getInstallationOctokit(Number(installationId));
+  console.log(`🛠️ ${pusher} pushed to ${owner}/${repo}`);
 
   try {
-    const content = `# Witness Me\nThis file was created by ForgeSoul Bot.\n\n🔥 You have been noticed.`;
-    const path = ".forge/witness-me.md";
-    const owner = "Forge-Lord";
-    const repoName = "Table-Forge";
+    const octokit = await octokitApp.getInstallationOctokit(process.env.INSTALLATION_ID);
 
-    await octokit.rest.repos.createOrUpdateFileContents({
+    const content = `# Witness Me\nThis file was created by ForgeSoul Bot.\n\n🔥 You have been noticed.`;
+
+    await octokit.repos.createOrUpdateFileContents({
       owner,
-      repo: repoName,
-      path,
-      message: "🤖 ForgeSoul Bot manifests .forge/witness-me.md",
+      repo,
+      path: ".forge/witness-me.md",
+      message: "ForgeSoul Bot: Added witness-me file",
       content: Buffer.from(content).toString("base64"),
       committer: {
         name: "ForgeSoul Bot",
@@ -56,14 +55,16 @@ webhooks.on("push", async ({ payload }) => {
       branch: payload.ref.replace("refs/heads/", "")
     });
 
-    console.log("✅ File created successfully.");
+    console.log("✅ witness-me.md committed successfully.");
   } catch (error) {
-    console.error("❌ Failed to create file:", error);
+    console.error("❌ Failed to commit witness-me.md:", error);
   }
 });
 
+// Webhook Endpoint
 app.use("/github-webhook", createNodeMiddleware(webhooks));
 
+// Simple Landing
 app.get("/", (_, res) => {
   res.send("ForgeSoul Bot is online and awaiting webhooks.");
 });
