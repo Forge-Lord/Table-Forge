@@ -1,5 +1,3 @@
-// index.js
-
 import express from 'express';
 import { createNodeMiddleware } from '@octokit/webhooks';
 import pkg from '@octokit/webhooks-methods';
@@ -13,7 +11,6 @@ const PORT = process.env.PORT || 3000;
 
 const { Webhooks } = pkg;
 
-// Create GitHub App instance
 const octokitApp = new App({
   appId: process.env.APP_ID,
   privateKey: process.env.PRIVATE_KEY,
@@ -34,7 +31,6 @@ webhooks.on("push", async ({ payload }) => {
   const repo = payload.repository.full_name;
   const pusher = payload.pusher.name;
   console.log(`🚀 ${pusher} pushed to ${repo}`);
-  // Future: auto-commit, PR, notifications, etc.
 });
 
 app.use(createNodeMiddleware(webhooks));
@@ -43,4 +39,6 @@ app.get("/", (_, res) => {
   res.send("🛠️ ForgeSoul Bot is alive.");
 });
 
-app.listen(PORT, () => console.log(`🧠 ForgeSoul Bot running on port ${PORT}`));
+app.listen(PORT, () => {
+  console.log(`🧠 ForgeSoul Bot running on port ${PORT}`);
+});
