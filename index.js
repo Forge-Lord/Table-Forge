@@ -7,7 +7,6 @@ import { Octokit } from "@octokit/rest";
 dotenv.config();
 
 const app = express();
-// ✅ Render requires PORT from env
 const PORT = process.env.PORT;
 
 // GitHub App Setup
@@ -27,17 +26,18 @@ const webhooks = new Webhooks({
   secret: process.env.WEBHOOK_SECRET
 });
 
+// ✅ Handle push events
 webhooks.on("push", async ({ payload }) => {
   const repo = payload.repository.name;
   const owner = payload.repository.owner.login;
   const pusher = payload.pusher.name;
   const branch = payload.ref.replace("refs/heads/", "");
 
-  console.log(`🛠️ ${pusher} pushed to ${owner}/${repo} on ${branch}`);
+  console.log(`🛠️ ${pusher} pushed to ${owner}/${repo} on branch ${branch}`);
 
   try {
     const octokit = await octokitApp.getInstallationOctokit(process.env.INSTALLATION_ID);
-    console.log("🔐 Installation Octokit authenticated.");
+    console.log("🔐 Installation Octokit authenticated");
 
     const content = `# Witness Me\nThis file was created by ForgeSoul Bot.\n\n🔥 You have been noticed.`;
     const path = ".forge/witness-me.md";
@@ -59,20 +59,33 @@ webhooks.on("push", async ({ payload }) => {
       branch
     });
 
-    console.log(`✅ File committed successfully: ${path}`);
+    console.log(`✅ Committed: ${path}`);
   } catch (error) {
     console.error("❌ Commit failed:", error.message || error);
   }
 });
 
-// Webhook Endpoint
+
+// 🧪 Diagnostic: log if POSTs reach the route
+app.post("/github-webhook", (req, res, next) => {
+  console.log("🔥 /github-webhook POST received");
+  next(); // Pass to Octokit middleware
+});
+
+// 🧪 Diagnostic: GET to confirm route is up
+app.get("/github-webhook", (_, res) => {
+  res.send("🛠️ GitHub Webhook is active and listening.");
+});
+
+// Webhook handler
 app.use("/github-webhook", createNodeMiddleware(webhooks));
 
-// Simple Landing
+// Root page
 app.get("/", (_, res) => {
   res.send("ForgeSoul Bot is online and awaiting webhooks.");
 });
 
+// Start server
 app.listen(PORT, () => {
   console.log(`✅ ForgeSoul Bot running at http://localhost:${PORT}`);
 });
