@@ -1,3 +1,5 @@
+// index.js
+
 import express from "express";
 import dotenv from "dotenv";
 import { App } from "@octokit/app";
@@ -7,7 +9,7 @@ import { Octokit } from "@octokit/rest";
 dotenv.config();
 
 const app = express();
-// ✅ Must use Render's assigned port
+// ✅ Must use Render's assigned port — no fallback
 const PORT = process.env.PORT;
 
 // GitHub App Setup
