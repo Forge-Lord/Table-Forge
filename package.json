@@ -4,7 +4,7 @@
   "description": "Table Forge - Multiplayer TCG Overlay System + ForgeSoul Bot",
   "type": "module",
   "scripts": {
-    "start": "serve .",
+    "dev": "serve .",
     "bot": "node index.js"
   },
   "dependencies": {
