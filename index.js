@@ -3,15 +3,11 @@ import dotenv from "dotenv";
 import { App } from "@octokit/app";
 import { Webhooks, createNodeMiddleware } from "@octokit/webhooks";
 import { Octokit } from "@octokit/rest";
-import bodyParser from "body-parser";
 
 dotenv.config();
 
 const app = express();
 const PORT = process.env.PORT;
-
-// Enable body parsing
-app.use(bodyParser.json());
 
 // GitHub App Setup
 const octokitApp = new App({
@@ -26,26 +22,25 @@ const octokitApp = new App({
   }
 });
 
-// Webhooks
 const webhooks = new Webhooks({
   secret: process.env.WEBHOOK_SECRET
 });
 
-// Push Event Logic
+// 🔥 Diagnostic
 webhooks.on("push", async ({ payload }) => {
   const repo = payload.repository.name;
   const owner = payload.repository.owner.login;
   const pusher = payload.pusher.name;
   const branch = payload.ref.replace("refs/heads/", "");
 
-  console.log(`🛠️ ${pusher} pushed to ${owner}/${repo} on ${branch}`);
+  console.log(`🛠️ ${pusher} pushed to ${owner}/${repo} on branch ${branch}`);
 
   try {
     const octokit = await octokitApp.getInstallationOctokit(process.env.INSTALLATION_ID);
-    console.log("🔐 Octokit authenticated.");
+    console.log("🔐 Installation Octokit authenticated");
 
-    const path = ".forge/witness-me.md";
     const content = `# Witness Me\nThis file was created by ForgeSoul Bot.\n\n🔥 You have been noticed.`;
+    const path = ".forge/witness-me.md";
 
     await octokit.repos.createOrUpdateFileContents({
       owner,
@@ -64,35 +59,31 @@ webhooks.on("push", async ({ payload }) => {
       branch
     });
 
-    console.log(`✅ Committed ${path} to ${branch}`);
-  } catch (err) {
-    console.error("❌ Error committing file:", err.message);
-    if (err.response) {
-      console.error("GitHub Error:", err.response.data);
-    }
+    console.log(`✅ Committed: ${path}`);
+  } catch (error) {
+    console.error("❌ Commit failed:", error.message || error);
   }
 });
 
-// Manual POST hook log to make sure route fires
+// POST handler for diagnostics
 app.post("/github-webhook", (req, res, next) => {
   console.log("🔥 /github-webhook POST received");
   next();
 });
 
-// ✅ Must come AFTER logging middleware
+// GET test
+app.get("/github-webhook", (_, res) => {
+  res.send("🛠️ GitHub Webhook is active and listening.");
+});
+
+// Webhook middleware
 app.use("/github-webhook", createNodeMiddleware(webhooks));
 
-// GET for debugging route
-app.get("/github-webhook", (_, res) => {
-  res.send("🛠️ GitHub Webhook is active.");
-});
-
-// Root test page
+// Root
 app.get("/", (_, res) => {
-  res.send("ForgeSoul Bot is online.");
+  res.send("ForgeSoul Bot is online and awaiting webhooks.");
 });
 
-// Start
 app.listen(PORT, () => {
   console.log(`✅ ForgeSoul Bot running at http://localhost:${PORT}`);
 });
