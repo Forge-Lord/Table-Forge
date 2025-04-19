@@ -26,7 +26,7 @@ const webhooks = new Webhooks({
   secret: process.env.WEBHOOK_SECRET
 });
 
-// 🔥 Diagnostic
+// Handle GitHub push events
 webhooks.on("push", async ({ payload }) => {
   const repo = payload.repository.name;
   const owner = payload.repository.owner.login;
@@ -37,7 +37,7 @@ webhooks.on("push", async ({ payload }) => {
 
   try {
     const octokit = await octokitApp.getInstallationOctokit(process.env.INSTALLATION_ID);
-    console.log("🔐 Installation Octokit authenticated");
+    console.log("🔐 Authenticated with Octokit");
 
     const content = `# Witness Me\nThis file was created by ForgeSoul Bot.\n\n🔥 You have been noticed.`;
     const path = ".forge/witness-me.md";
@@ -65,25 +65,15 @@ webhooks.on("push", async ({ payload }) => {
   }
 });
 
-// POST handler for diagnostics
-app.post("/github-webhook", (req, res, next) => {
-  console.log("🔥 /github-webhook POST received");
-  next();
-});
-
-// GET test
-app.get("/github-webhook", (_, res) => {
-  res.send("🛠️ GitHub Webhook is active and listening.");
-});
-
-// Webhook middleware
+// Attach the Octokit webhook middleware BEFORE anything else at that route
 app.use("/github-webhook", createNodeMiddleware(webhooks));
 
-// Root
+// Root confirmation
 app.get("/", (_, res) => {
   res.send("ForgeSoul Bot is online and awaiting webhooks.");
 });
 
+// Start server
 app.listen(PORT, () => {
   console.log(`✅ ForgeSoul Bot running at http://localhost:${PORT}`);
 });
