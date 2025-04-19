@@ -9,7 +9,7 @@ dotenv.config();
 const app = express();
 const PORT = process.env.PORT;
 
-// GitHub App setup
+// GitHub App Setup
 const octokitApp = new App({
   appId: process.env.APP_ID,
   privateKey: process.env.PRIVATE_KEY,
@@ -26,30 +26,30 @@ const webhooks = new Webhooks({
   secret: process.env.WEBHOOK_SECRET
 });
 
-// Handle push
+// Handle Push Event
 webhooks.on("push", async ({ payload }) => {
+  console.log("🚀 Webhook 'push' event triggered!");
+
   const repo = payload.repository.name;
   const owner = payload.repository.owner.login;
   const pusher = payload.pusher.name;
   const branch = payload.ref.replace("refs/heads/", "");
 
-  console.log(`🛠️ ${pusher} pushed to ${owner}/${repo} on ${branch}`);
+  console.log(`🛠️ ${pusher} pushed to ${owner}/${repo} on branch ${branch}`);
 
   try {
     const octokit = await octokitApp.getInstallationOctokit(process.env.INSTALLATION_ID);
-    console.log("🔐 Authenticated via installation ID");
+    console.log("🔐 Installation Octokit authenticated.");
 
+    const content = `# Witness Me\nThis file was created by ForgeSoul Bot.\n\n🔥 You have been noticed.`;
     const path = ".forge/witness-me.md";
-    const content = "# Witness Me\nThis file was created by ForgeSoul Bot.\n\n🔥 You have been noticed.";
 
-    const fileData = Buffer.from(content).toString("base64");
-
-    await octokit.repos.createOrUpdateFileContents({
+    const response = await octokit.repos.createOrUpdateFileContents({
       owner,
       repo,
       path,
       message: "ForgeSoul Bot: Added witness-me file",
-      content: fileData,
+      content: Buffer.from(content).toString("base64"),
       committer: {
         name: "ForgeSoul Bot",
         email: "bot@tableforge.app"
@@ -62,37 +62,36 @@ webhooks.on("push", async ({ payload }) => {
     });
 
     console.log(`✅ Committed: ${path}`);
-  } catch (err) {
-    console.error("❌ Commit failed");
-    if (err.response) {
-      console.error("Status:", err.response.status);
-      console.error("Headers:", err.response.headers);
-      console.error("Body:", JSON.stringify(err.response.data, null, 2));
-    } else {
-      console.error(err);
+    console.log("GitHub API response:", response.status);
+  } catch (error) {
+    console.error("❌ Commit failed:", error.message || error);
+    if (error.response) {
+      console.error("🔍 Status:", error.status);
+      console.error("🔍 GitHub Error:", error.response.data);
     }
   }
 });
 
-// Confirm POST is hit
+// Diagnostic POST route (optional)
 app.post("/github-webhook", (req, res, next) => {
   console.log("🔥 /github-webhook POST received");
-  next();
+  next(); // Pass to Octokit middleware
 });
 
-// Confirm GET is reachable
+// Diagnostic GET route
 app.get("/github-webhook", (_, res) => {
-  res.send("🛠️ GitHub Webhook route is alive");
+  res.send("🛠️ GitHub Webhook is active and listening.");
 });
 
-// Middleware
+// Connect Octokit Webhooks Middleware
 app.use("/github-webhook", createNodeMiddleware(webhooks));
 
-// Root
+// Root page
 app.get("/", (_, res) => {
-  res.send("ForgeSoul Bot is online.");
+  res.send("ForgeSoul Bot is online and awaiting webhooks.");
 });
 
+// Start Server
 app.listen(PORT, () => {
-  console.log(`✅ ForgeSoul Bot running on http://localhost:${PORT}`);
+  console.log(`✅ ForgeSoul Bot running at http://localhost:${PORT}`);
 });
