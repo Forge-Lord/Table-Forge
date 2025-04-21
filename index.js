@@ -7,9 +7,8 @@ dotenv.config();
 
 const app = express();
 const PORT = process.env.PORT;
-const FIXED_PRIVATE_KEY = process.env.PRIVATE_KEY.replace(/\\n/g, '\n');
+const FIXED_PRIVATE_KEY = process.env.PRIVATE_KEY.replace(/\\n/g, "\n");
 
-// GitHub App setup
 const octokitApp = new App({
   appId: process.env.APP_ID,
   privateKey: FIXED_PRIVATE_KEY,
@@ -26,18 +25,18 @@ const webhooks = new Webhooks({
   secret: process.env.WEBHOOK_SECRET
 });
 
-// Main push listener
+// ✅ Push event handler
 webhooks.on("push", async ({ payload }) => {
   const repo = payload.repository.name;
   const owner = payload.repository.owner.login;
   const branch = payload.ref.replace("refs/heads/", "");
   const pusher = payload.pusher.name;
 
-  console.log(`🛠️ Push detected: ${pusher} -> ${owner}/${repo} (${branch})`);
+  console.log(`🛠️ Push by ${pusher} on ${owner}/${repo} [${branch}]`);
 
   try {
     const octokit = await octokitApp.getInstallationOctokit(process.env.INSTALLATION_ID);
-    console.log("🔐 Authenticated Octokit!");
+    console.log("🔐 Authenticated Octokit");
 
     const content = `# Witness Me\n🔥 Commit by ${pusher} on branch ${branch} at ${new Date().toISOString()}`;
     const path = ".forge/witness-me.md";
@@ -46,32 +45,36 @@ webhooks.on("push", async ({ payload }) => {
       owner,
       repo,
       path,
-      message: `ForgeSoul Bot: Witnessed ${branch} push`,
+      message: `ForgeSoul Bot: Witnessed push to ${branch}`,
       content: Buffer.from(content).toString("base64"),
-      committer: { name: "ForgeSoul Bot", email: "bot@tableforge.app" },
-      author: { name: "ForgeSoul Bot", email: "bot@tableforge.app" },
+      committer: {
+        name: "ForgeSoul Bot",
+        email: "bot@tableforge.app"
+      },
+      author: {
+        name: "ForgeSoul Bot",
+        email: "bot@tableforge.app"
+      },
       branch
     });
 
-    console.log(`✅ Committed file: ${path}`);
+    console.log("✅ witness-me.md committed successfully.");
   } catch (error) {
-    console.error("❌ Error committing file:");
+    console.error("❌ Commit failed:");
     console.error(error.stack || error.message || error);
   }
 });
 
-// ✅ This line wires up the real webhook endpoint
-app.use("/github-webhook", createNodeMiddleware(webhooks));
+// ✅ Webhook middleware route
+app.use("/github-webhook", createNodeMiddleware(webhooks, {
+  path: "/github-webhook" // critical for GitHub routing!
+}));
 
-// Root debug routes
+// ✅ Basic root + diagnostics
 app.get("/", (_, res) => {
-  res.send("✅ ForgeSoul Bot is online.");
-});
-app.get("/github-webhook", (_, res) => {
-  res.send("✅ Webhook endpoint is ready.");
+  res.send("✅ ForgeSoul Bot is online and ready.");
 });
 
-// Start server
 app.listen(PORT, () => {
   console.log(`✅ ForgeSoul Bot running at http://localhost:${PORT}`);
 });
