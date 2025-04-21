@@ -7,8 +7,6 @@ dotenv.config();
 
 const app = express();
 const PORT = process.env.PORT;
-
-// ✅ Fix Render's newline escaping in the RSA key
 const FIXED_PRIVATE_KEY = process.env.PRIVATE_KEY.replace(/\\n/g, '\n');
 
 // GitHub App setup
@@ -24,25 +22,11 @@ const octokitApp = new App({
   }
 });
 
-const webhooks = new Webhooks({ secret: process.env.WEBHOOK_SECRET });
-
-// Confirm base route
-app.get("/", (_, res) => {
-  res.send("✅ ForgeSoul Bot is alive.");
+const webhooks = new Webhooks({
+  secret: process.env.WEBHOOK_SECRET
 });
 
-// Confirm GET route for GitHub debugging
-app.get("/github-webhook", (_, res) => {
-  res.send("✅ GitHub Webhook route is active.");
-});
-
-// Diagnostic POST route to verify receipt
-app.post("/github-webhook", express.json(), (req, res, next) => {
-  console.log("🔥 /github-webhook POST received");
-  next(); // Pass to Octokit middleware
-});
-
-// GitHub webhook push handler
+// Main push listener
 webhooks.on("push", async ({ payload }) => {
   const repo = payload.repository.name;
   const owner = payload.repository.owner.login;
@@ -76,10 +60,18 @@ webhooks.on("push", async ({ payload }) => {
   }
 });
 
-// Final webhook middleware
+// ✅ This line wires up the real webhook endpoint
 app.use("/github-webhook", createNodeMiddleware(webhooks));
 
-// Boot it up
+// Root debug routes
+app.get("/", (_, res) => {
+  res.send("✅ ForgeSoul Bot is online.");
+});
+app.get("/github-webhook", (_, res) => {
+  res.send("✅ Webhook endpoint is ready.");
+});
+
+// Start server
 app.listen(PORT, () => {
   console.log(`✅ ForgeSoul Bot running at http://localhost:${PORT}`);
 });
