@@ -8,7 +8,7 @@ dotenv.config();
 const app = express();
 const PORT = process.env.PORT;
 
-// Fix Render's newline escaping for PRIVATE_KEY
+// ✅ Fix Render's newline escaping in the RSA key
 const FIXED_PRIVATE_KEY = process.env.PRIVATE_KEY.replace(/\\n/g, '\n');
 
 // GitHub App setup
@@ -36,13 +36,13 @@ app.get("/github-webhook", (_, res) => {
   res.send("✅ GitHub Webhook route is active.");
 });
 
-// Diagnostic POST route
+// Diagnostic POST route to verify receipt
 app.post("/github-webhook", express.json(), (req, res, next) => {
   console.log("🔥 /github-webhook POST received");
   next(); // Pass to Octokit middleware
 });
 
-// Main push listener
+// GitHub webhook push handler
 webhooks.on("push", async ({ payload }) => {
   const repo = payload.repository.name;
   const owner = payload.repository.owner.login;
@@ -76,9 +76,10 @@ webhooks.on("push", async ({ payload }) => {
   }
 });
 
+// Final webhook middleware
 app.use("/github-webhook", createNodeMiddleware(webhooks));
 
-// Start server
+// Boot it up
 app.listen(PORT, () => {
   console.log(`✅ ForgeSoul Bot running at http://localhost:${PORT}`);
 });
