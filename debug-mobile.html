@@ -26,37 +26,77 @@
       text-align: left;
       font-size: 13px;
     }
+    button {
+      margin: 10px;
+      padding: 10px 20px;
+      background: #222;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+    button:hover {
+      background: #444;
+    }
   </style>
 </head>
 <body>
   <h2>Forge AV Debug (Mobile)</h2>
   <video id="cam" autoplay playsinline muted></video>
   <pre id="log">Loading...</pre>
+  <button id="startCameraBtn">Start Camera</button>
+  <button id="stopCameraBtn" disabled>Stop Camera</button>
 
   <script>
     const log = document.getElementById("log");
     const video = document.getElementById("cam");
+    const startCameraBtn = document.getElementById("startCameraBtn");
+    const stopCameraBtn = document.getElementById("stopCameraBtn");
 
-    function write(msg) {
-      log.textContent += "\n" + msg;
+    let currentStream = null;
+
+    function writeLog(msg) {
+      log.textContent += `\n${msg}`;
+      log.scrollTop = log.scrollHeight; // Auto-scroll to the latest log
     }
 
-    async function initCamera() {
+    async function startCamera() {
       try {
-        const facing = localStorage.getItem("cameraFacingMode") || "user";
-        write("Attempting to access camera: " + facing);
+        writeLog("🔄 Attempting to start camera...");
+        const facingMode = localStorage.getItem("cameraFacingMode") || "user";
         const stream = await navigator.mediaDevices.getUserMedia({
-          video: { facingMode: facing },
+          video: { facingMode },
           audio: true
         });
         video.srcObject = stream;
-        write("✅ Stream acquired");
-      } catch (err) {
-        write("❌ Camera error: " + err.message);
+        currentStream = stream;
+        writeLog("✅ Camera started successfully.");
+        startCameraBtn.disabled = true;
+        stopCameraBtn.disabled = false;
+      } catch (error) {
+        writeLog(`❌ Camera error: ${error.message}`);
+        alert("Unable to access the camera. Please check permissions and try again.");
       }
     }
 
-    initCamera();
+    function stopCamera() {
+      if (currentStream) {
+        currentStream.getTracks().forEach(track => track.stop());
+        video.srcObject = null;
+        currentStream = null;
+        writeLog("⏹️ Camera stopped.");
+        startCameraBtn.disabled = false;
+        stopCameraBtn.disabled = true;
+      } else {
+        writeLog("⚠️ No active camera to stop.");
+      }
+    }
+
+    startCameraBtn.addEventListener("click", startCamera);
+    stopCameraBtn.addEventListener("click", stopCamera);
+
+    // Initialize camera on page load
+    writeLog("🔍 Ready for camera testing. Click 'Start Camera' to begin.");
   </script>
 </body>
 </html>
