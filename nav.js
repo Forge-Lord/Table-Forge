@@ -8,11 +8,15 @@ export function renderNav() {
     justify-content: center;
     gap: 20px;
     font-family: sans-serif;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 999;
   `;
 
   const links = [
     { label: "Home", href: "index.html" },
-    { label: "Lobbies", href: "lobbies.html" },
     { label: "Lobby", href: "lobby.html" },
     { label: "Profile", href: "profile.html" }
   ];
