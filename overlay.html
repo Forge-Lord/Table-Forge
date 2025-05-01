@@ -1,5 +1,4 @@
-<!DOCTYPE html>
-<html>
+<!DOCTYPE html><html>
 <head>
   <title>Table Forge Overlay</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -48,10 +47,24 @@
     .life {
       margin-top: 4px;
     }
+    #startBtn {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      z-index: 9999;
+      padding: 16px 32px;
+      background: #222;
+      border: 2px solid #fff;
+      color: white;
+      font-size: 18px;
+      border-radius: 10px;
+      cursor: pointer;
+    }
   </style>
 </head>
 <body>
-  <div class="overlay-grid">
+  <button id="startBtn">Start Overlay</button>  <div class="overlay-grid" style="display:none">
     <div class="player-box" id="P1">
       <video autoplay playsinline></video>
       <div class="ui-overlay"><div class="name">P1</div><div class="life">40</div></div>
@@ -68,7 +81,11 @@
       <video autoplay playsinline></video>
       <div class="ui-overlay"><div class="name">P4</div><div class="life">40</div></div>
     </div>
-  </div>
-  <script type="module" src="overlay.js"></script>
-</body>
+  </div>  <script type="module">
+    document.getElementById("startBtn").addEventListener("click", () => {
+      document.getElementById("startBtn").style.display = "none";
+      document.querySelector(".overlay-grid").style.display = "grid";
+      import("./overlay.js");
+    });
+  </script></body>
 </html>
