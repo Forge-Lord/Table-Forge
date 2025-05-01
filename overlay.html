@@ -81,11 +81,11 @@
       <video autoplay playsinline></video>
       <div class="ui-overlay"><div class="name">P4</div><div class="life">40</div></div>
     </div>
-  </div>  <script type="module">
+  </div>  <script type="module" src="overlay.js"></script>  <script>
     document.getElementById("startBtn").addEventListener("click", () => {
       document.getElementById("startBtn").style.display = "none";
       document.querySelector(".overlay-grid").style.display = "grid";
-      import("./overlay.js");
+      window.startOverlay();
     });
   </script></body>
 </html>
