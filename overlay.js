@@ -9,7 +9,6 @@ import {
   push
 } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-database.js";
 import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-auth.js";
-
 import SimplePeer from "https://cdn.skypack.dev/simple-peer";
 
 const firebaseConfig = {
@@ -44,10 +43,17 @@ onAuthStateChanged(auth, async (user) => {
   const name = localStorage.getItem("displayName") || user.displayName || user.email;
 
   // Load video/audio
-  localStream = await navigator.mediaDevices.getUserMedia({
-    video: { deviceId: { exact: selectedCamera } },
-    audio: { deviceId: { exact: selectedMic } }
-  });
+  try {
+    localStream = await navigator.mediaDevices.getUserMedia({
+      video: selectedCamera ? { deviceId: { exact: selectedCamera } } : true,
+      audio: selectedMic ? { deviceId: { exact: selectedMic } } : true
+    });
+    console.log("✅ Local stream acquired");
+  } catch (err) {
+    console.error("❌ Camera/mic permission error:", err);
+    alert("Please allow camera/mic and refresh the page.");
+    return;
+  }
 
   const myBox = document.getElementById(mySeat);
   const myVideo = myBox.querySelector("video");
@@ -58,7 +64,6 @@ onAuthStateChanged(auth, async (user) => {
 
   // Register as participant
   peerId = push(ref(db, `signals/${roomCode}/${mySeat}`)).key;
-
   onDisconnect(ref(db, `signals/${roomCode}/${mySeat}/${peerId}`)).remove();
 
   // Listen for incoming signals
