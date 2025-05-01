@@ -45,6 +45,13 @@
       font-size: 12px;
       padding: 4px 8px;
     }
+    video {
+      margin-top: 10px;
+      max-width: 100%;
+      height: auto;
+      border: 2px solid #444;
+      border-radius: 10px;
+    }
   </style>
 </head>
 <body>
@@ -78,12 +85,22 @@
 
   <div id="lobbyView" style="display: none;">
     <h2>Lobby Room: <span id="roomDisplay"></span></h2>
-    <button class="flip-button" onclick="flipCamera()">Flip Camera</button>
+
+    <h3>Select Camera and Microphone</h3>
+    <label>Camera:
+      <select id="videoInput"></select>
+    </label><br />
+    <label>Microphone:
+      <select id="audioInput"></select>
+    </label><br />
+    <button onclick="startPreview()">Save + Preview</button><br />
+    <video id="camPreview" autoplay muted playsinline></video>
+
     <div id="playerList"></div>
     <button id="startGameBtn" onclick="startGame()" style="display: none; margin-top: 2em;">Start Game</button>
   </div>
 
-  <!-- Auth Guard -->
+  <!-- Firebase Auth Logic -->
   <script type="module">
     import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-auth.js";
     import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-app.js";
@@ -103,6 +120,7 @@
       } else {
         const name = localStorage.getItem("displayName") || user.displayName || "Unknown";
         document.getElementById("profileName").textContent = name;
+        populateDevices(); // Load camera/mic list
       }
     });
 
@@ -111,6 +129,48 @@
       localStorage.clear();
       window.location.href = "/";
     });
+
+    // 📸 Camera & Mic Setup
+    let selectedCamId = "";
+    let selectedMicId = "";
+
+    async function populateDevices() {
+      const devices = await navigator.mediaDevices.enumerateDevices();
+      const videoSelect = document.getElementById("videoInput");
+      const audioSelect = document.getElementById("audioInput");
+      videoSelect.innerHTML = "";
+      audioSelect.innerHTML = "";
+
+      devices.forEach((device) => {
+        const option = document.createElement("option");
+        option.value = device.deviceId;
+        option.text = device.label || `${device.kind}`;
+        if (device.kind === "videoinput") videoSelect.appendChild(option);
+        else if (device.kind === "audioinput") audioSelect.appendChild(option);
+      });
+
+      // Restore saved values
+      const storedCam = localStorage.getItem("selectedCamera");
+      const storedMic = localStorage.getItem("selectedMic");
+      if (storedCam) videoSelect.value = storedCam;
+      if (storedMic) audioSelect.value = storedMic;
+    }
+
+    async function startPreview() {
+      selectedCamId = document.getElementById("videoInput").value;
+      selectedMicId = document.getElementById("audioInput").value;
+      localStorage.setItem("selectedCamera", selectedCamId);
+      localStorage.setItem("selectedMic", selectedMicId);
+
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: { deviceId: selectedCamId ? { exact: selectedCamId } : undefined },
+        audio: { deviceId: selectedMicId ? { exact: selectedMicId } : undefined }
+      });
+
+      const preview = document.getElementById("camPreview");
+      preview.srcObject = stream;
+      preview.play();
+    }
   </script>
 
   <!-- Room Logic -->
