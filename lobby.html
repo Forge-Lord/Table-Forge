@@ -108,6 +108,7 @@
     let currentUser = null;
     let currentRoom = null;
     let isHost = false;
+    let displayName = "";
 
     const roomList = document.getElementById("roomList");
     const playerList = document.getElementById("playerList");
@@ -115,6 +116,7 @@
     onAuthStateChanged(auth, (user) => {
       if (!user) return window.location.href = "/profile.html";
       currentUser = user;
+      displayName = localStorage.getItem("displayName") || user.displayName || user.email;
       loadRooms();
     });
 
@@ -125,7 +127,6 @@
         snapshot.forEach((child) => {
           const room = child.val();
           const roomId = child.key;
-
           const isExpired = Date.now() - (room.createdAt || 0) > 12 * 60 * 60 * 1000;
           if (room.started || isExpired) return;
 
@@ -151,11 +152,11 @@
 
       const players = {};
       for (let i = 1; i <= playerCount; i++) {
-        players[`P${i}`] = i === 1 ? { name: currentUser.email, life: 40, status: "" } : {};
+        players[`P${i}`] = i === 1 ? { name: displayName, life: 40, status: "" } : {};
       }
 
       await set(ref(db, `rooms/${roomCode}`), {
-        host: currentUser.email,
+        host: displayName,
         template,
         playerCount,
         started: false,
@@ -174,6 +175,15 @@
       const snap = await get(ref(db, `rooms/${code}`));
       if (!snap.exists()) return alert("Room not found.");
       const data = snap.val();
+
+      // Prevent duplicate join
+      for (let i = 1; i <= data.playerCount; i++) {
+        const slot = `P${i}`;
+        if (data.players[slot]?.name === displayName) {
+          return alert("You're already in this room.");
+        }
+      }
+
       let seat = null;
       for (let i = 1; i <= data.playerCount; i++) {
         const slot = `P${i}`;
@@ -186,13 +196,13 @@
 
       await update(ref(db), {
         [`rooms/${code}/players/${seat}`]: {
-          name: currentUser.email,
+          name: displayName,
           life: 40,
           status: ""
         }
       });
 
-      isHost = data.host === currentUser.email;
+      isHost = data.host === displayName;
       currentRoom = code;
       localStorage.setItem("mySeat", seat);
       localStorage.setItem("roomCode", code);
@@ -220,11 +230,17 @@
           }
         });
       });
+
+      // ✅ All players listen for game start
+      onValue(ref(db, `rooms/${code}/started`), (snap) => {
+        if (snap.val() === true) {
+          window.location.href = `/overlay.html?room=${code}`;
+        }
+      });
     }
 
     window.startGame = function () {
       update(ref(db, `rooms/${currentRoom}`), { started: true });
-      window.location.href = `/overlay.html?room=${currentRoom}`;
     };
 
     async function populateDevices() {
