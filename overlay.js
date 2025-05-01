@@ -1,4 +1,4 @@
-// overlay.js - Final with peer signal fix for remote cam visibility
+// overlay.js – Full recovery build with working names, local + remote cams, stable signaling
 
 import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-app.js"; import { getDatabase, ref, get, onChildAdded, onDisconnect, push } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-database.js"; import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-auth.js"; import SimplePeer from "https://cdn.skypack.dev/simple-peer";
 
@@ -35,7 +35,7 @@ function hideSeats(seats) { seats.forEach(s => { const el = document.getElementB
 
 function showAllSeats(seats) { seats.forEach(s => { const el = document.getElementById(s); if (el) el.style.display = "block"; }); }
 
-function updateNames(players) { for (const seat in players) { const box = document.getElementById(seat); if (box && box.querySelector(".name")) { box.querySelector(".name").textContent = players[seat].name || seat; } } }
+function updateNames(players) { for (const seat in players) { const box = document.getElementById(seat); if (box) { const label = box.querySelector(".name"); const nameVal = players[seat]?.name || seat; if (label) label.textContent = nameVal; } } }
 
 async function startPreviewCompatibleCamera() { try { const devices = await navigator.mediaDevices.enumerateDevices(); const cams = devices.filter(d => d.kind === "videoinput"); const mics = devices.filter(d => d.kind === "audioinput"); if (!selectedCamera && cams.length) selectedCamera = cams[0].deviceId; if (!selectedMic && mics.length) selectedMic = mics[0].deviceId;
 
@@ -51,9 +51,9 @@ function attachMyStream(seat, name) { const box = document.getElementById(seat);
 
 function setupPeerSync(players) { const myRef = ref(db, signals/${roomCode}/${mySeat}); const myId = push(myRef).key; onDisconnect(ref(db, signals/${roomCode}/${mySeat}/${myId})).remove();
 
-// send to everyone for (const seat in players) { if (seat !== mySeat && players[seat]?.name) { if (!peers[seat]) createPeer(seat, true); } }
+for (const seat in players) { if (seat !== mySeat && players[seat]?.name) { if (!peers[seat]) createPeer(seat, true); } }
 
-// listen to each seat directly for (const seat in players) { if (seat === mySeat) continue; const seatRef = ref(db, signals/${roomCode}/${seat}); onChildAdded(seatRef, (sigSnap) => { const { from, signal } = sigSnap.val(); if (from === mySeat) return; if (!peers[seat]) createPeer(seat, false); peers[seat].signal(signal); }); } }
+for (const seat in players) { if (seat === mySeat) continue; const seatRef = ref(db, signals/${roomCode}/${seat}); onChildAdded(seatRef, (sigSnap) => { const { from, signal } = sigSnap.val(); if (from === mySeat) return; if (!peers[seat]) createPeer(seat, false); peers[seat].signal(signal); }); } }
 
 function createPeer(targetSeat, initiator) { const peer = new SimplePeer({ initiator, trickle: false, stream: localStream });
 
