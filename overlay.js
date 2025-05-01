@@ -1,10 +1,17 @@
-// overlay.js
-import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-app.js";
+import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-app.js";
 import {
-  getDatabase, ref, onValue, update
-} from "https://www.gstatic.com/firebasejs/9.22.2/firebase-database.js";
+  getDatabase,
+  ref,
+  get,
+  set,
+  onChildAdded,
+  onDisconnect,
+  push
+} from "https://www.gstatic.com/firebasejs/9.22.0/firebase-database.js";
+import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-auth.js";
 
-// ✅ Your Firebase config
+import SimplePeer from "https://cdn.skypack.dev/simple-peer";
+
 const firebaseConfig = {
   apiKey: "AIzaSyBzvVpMCdg3Y6i5vCGWarorcTmzBzjmPow",
   authDomain: "tableforge-app.firebaseapp.com",
@@ -15,65 +22,97 @@ const firebaseConfig = {
 
 const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
+const auth = getAuth(app);
 
 const params = new URLSearchParams(window.location.search);
 const roomCode = params.get("room");
-const seat = localStorage.getItem("mySeat") || "P1";
+const mySeat = localStorage.getItem("mySeat");
+const selectedCamera = localStorage.getItem("selectedCamera");
+const selectedMic = localStorage.getItem("selectedMic");
 
-if (!roomCode) {
-  alert("Missing room code in URL.");
-  throw new Error("Room not specified");
-}
+let localStream;
+let peers = {};
+let peerId;
 
-const playerMap = {
-  P1: "p1",
-  P2: "p2",
-  P3: "p3",
-  P4: "p4"
-};
+onAuthStateChanged(auth, async (user) => {
+  if (!user || !roomCode || !mySeat) {
+    alert("Missing room or seat. Please rejoin.");
+    window.location.href = "/lobby.html";
+    return;
+  }
 
-async function loadCamera(targetDiv) {
-  const camId = localStorage.getItem("selectedCamera");
-  const micId = localStorage.getItem("selectedMic");
-  const stream = await navigator.mediaDevices.getUserMedia({
-    video: camId ? { deviceId: { exact: camId } } : true,
-    audio: micId ? { deviceId: { exact: micId } } : false
+  const name = localStorage.getItem("displayName") || user.displayName || user.email;
+
+  // Load video/audio
+  localStream = await navigator.mediaDevices.getUserMedia({
+    video: { deviceId: { exact: selectedCamera } },
+    audio: { deviceId: { exact: selectedMic } }
   });
-  const video = targetDiv.querySelector("video");
-  video.srcObject = stream;
-  video.play();
-}
 
-// Attach camera and bind input events for YOUR seat
-function setupLocalSeat(seatId) {
-  const divId = playerMap[seatId];
-  const container = document.getElementById(divId);
-  loadCamera(container);
+  const myBox = document.getElementById(mySeat);
+  const myVideo = myBox.querySelector("video");
+  myVideo.srcObject = localStream;
+  myVideo.muted = true;
 
-  ["name", "life", "status"].forEach((field) => {
-    const el = document.getElementById(`${field}${divId.slice(1)}`);
-    el.addEventListener("input", () => {
-      const updates = {};
-      updates[`rooms/${roomCode}/players/${seatId}/${field}`] = el.value;
-      update(ref(db), updates);
+  myBox.querySelector(".name").textContent = name;
+
+  // Register as participant
+  peerId = push(ref(db, `signals/${roomCode}/${mySeat}`)).key;
+
+  onDisconnect(ref(db, `signals/${roomCode}/${mySeat}/${peerId}`)).remove();
+
+  // Listen for incoming signals
+  onChildAdded(ref(db, `signals/${roomCode}`), (snap) => {
+    const seat = snap.key;
+    if (seat === mySeat) return;
+
+    onChildAdded(ref(db, `signals/${roomCode}/${seat}`), (sigSnap) => {
+      const { from, signal } = sigSnap.val();
+      if (from === mySeat) return;
+
+      if (!peers[seat]) {
+        createPeer(seat, false);
+      }
+
+      peers[seat].signal(signal);
     });
   });
-}
 
-// Watch all player slots
-function bindAllSeats() {
-  const roomRef = ref(db, `rooms/${roomCode}/players`);
-  onValue(roomRef, (snapshot) => {
-    const data = snapshot.val() || {};
-    Object.keys(playerMap).forEach((seatId) => {
-      const divId = playerMap[seatId].slice(1);
-      const p = data[seatId] || {};
-      document.getElementById(`name${divId}`).value = p.name || "";
-      document.getElementById(`life${divId}`).value = p.life || "40";
-      document.getElementById(`status${divId}`).value = p.status || "";
-    });
+  // Create offers for other players
+  const roomSnap = await get(ref(db, `rooms/${roomCode}/players`));
+  const players = roomSnap.val();
+
+  for (let seat in players) {
+    if (seat !== mySeat && players[seat].name) {
+      createPeer(seat, true);
+    }
+  }
+});
+
+function createPeer(targetSeat, initiator) {
+  const peer = new SimplePeer({
+    initiator,
+    trickle: false,
+    stream: localStream
   });
-}
 
-setupLocalSeat(seat);
-bindAllSeats();
+  peer.on("signal", (data) => {
+    const payload = {
+      from: mySeat,
+      signal: data
+    };
+    push(ref(db, `signals/${roomCode}/${targetSeat}`), payload);
+  });
+
+  peer.on("stream", (stream) => {
+    const box = document.getElementById(targetSeat);
+    if (box) {
+      const vid = box.querySelector("video");
+      vid.srcObject = stream;
+      vid.play();
+    }
+  });
+
+  peer.on("error", (err) => console.error("Peer error:", err));
+  peers[targetSeat] = peer;
+}
