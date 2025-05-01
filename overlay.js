@@ -1,51 +1,42 @@
-// overlay.js (Reliable Version - Late Join & Cam Sync)
+// This will be the core logic in overlay.js for adaptive, game-aware overlays // It detects the game template and player count and injects the proper layout logic
 
-import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-app.js"; import { getDatabase, ref, get, set, onChildAdded, onValue, onDisconnect, push } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-database.js"; import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-auth.js"; import SimplePeer from "https://cdn.skypack.dev/simple-peer";
+import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-app.js"; import { getDatabase, ref, get, onValue } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-database.js"; import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-auth.js"; import SimplePeer from "https://cdn.skypack.dev/simple-peer";
 
-const firebaseConfig = { apiKey: "AIzaSyBzvVpMCdg3Y6i5vCGWarorcTmzBzjmPow", authDomain: "tableforge-app.firebaseapp.com", databaseURL: "https://tableforge-app-default-rtdb.firebaseio.com", projectId: "tableforge-app", appId: "1:708497363618:web:39da060b48681944923dfb" };
+const firebaseConfig = { /* your config */ }; const app = initializeApp(firebaseConfig); const db = getDatabase(app); const auth = getAuth(app);
 
-const app = initializeApp(firebaseConfig); const db = getDatabase(app); const auth = getAuth(app);
+const roomCode = new URLSearchParams(window.location.search).get("room"); const mySeat = localStorage.getItem("mySeat"); const selectedCamera = localStorage.getItem("selectedCamera"); const selectedMic = localStorage.getItem("selectedMic");
 
-const params = new URLSearchParams(window.location.search); const roomCode = params.get("room"); const mySeat = localStorage.getItem("mySeat"); const selectedCamera = localStorage.getItem("selectedCamera"); const selectedMic = localStorage.getItem("selectedMic");
+let localStream; let peers = {};
 
-let localStream; let peers = {}; let peerId;
-
-onAuthStateChanged(auth, async (user) => { if (!user || !roomCode || !mySeat) { alert("Missing room or seat. Please rejoin."); window.location.href = "/lobby.html"; return; }
+onAuthStateChanged(auth, async (user) => { if (!user || !roomCode || !mySeat) return (window.location.href = "/profile.html");
 
 const name = localStorage.getItem("displayName") || user.displayName || user.email;
 
-try { localStream = await navigator.mediaDevices.getUserMedia({ video: selectedCamera ? { deviceId: { exact: selectedCamera } } : true, audio: selectedMic ? { deviceId: { exact: selectedMic } } : true }); console.log("✅ Local stream acquired"); } catch (err) { console.error("❌ Camera/mic permission error:", err); alert("Please allow camera/mic and refresh the page."); return; }
+const roomRef = ref(db, rooms/${roomCode}); const snap = await get(roomRef); const roomData = snap.val();
 
-const myBox = document.getElementById(mySeat); const myVideo = myBox.querySelector("video"); myVideo.srcObject = localStream; myVideo.muted = true;
+const template = roomData.template; const playerCount = roomData.playerCount;
 
-const playerRef = ref(db, rooms/${roomCode}/players); const playersSnap = await get(playerRef); const players = playersSnap.val();
+setupGridLayout(playerCount); await startCamera(); setupMySeat(mySeat, name);
 
-// Display all names for (let seat in players) { const box = document.getElementById(seat); if (box) { box.querySelector(".name").textContent = players[seat].name || seat; } }
+// Inject template-specific logic if (template === "commander") injectCommanderUI(); else if (template === "yugioh") injectYGOUI(); else if (template === "digimon") injectDigimonUI(); else injectDefaultUI();
 
-peerId = push(ref(db, signals/${roomCode}/${mySeat})).key; onDisconnect(ref(db, signals/${roomCode}/${mySeat}/${peerId})).remove();
+syncWithPeers(roomData.players); });
 
-// Recreate any late or missed peers every 5 seconds setInterval(() => { for (let seat in players) { if (seat !== mySeat && players[seat].name && !peers[seat]) { createPeer(seat, true); } } }, 5000);
+function setupGridLayout(playerCount) { const grid = document.querySelector(".overlay-grid"); if (playerCount === 2) { grid.style.gridTemplateRows = "1fr 1fr"; grid.style.gridTemplateColumns = "1fr"; hideSeats(["P3", "P4"]); } else if (playerCount === 3) { grid.style.gridTemplateRows = "1fr 1fr"; grid.style.gridTemplateColumns = "1fr 1fr"; hideSeats(["P4"]); } else { grid.style.gridTemplateRows = "1fr 1fr"; grid.style.gridTemplateColumns = "1fr 1fr"; } }
 
-// Listen for incoming offers onChildAdded(ref(db, signals/${roomCode}), (snap) => { const seat = snap.key; if (seat === mySeat) return;
+async function startCamera() { try { localStream = await navigator.mediaDevices.getUserMedia({ video: selectedCamera ? { deviceId: { exact: selectedCamera } } : true, audio: selectedMic ? { deviceId: { exact: selectedMic } } : true }); } catch (e) { alert("Please enable camera/mic."); console.error(e); } }
 
-onChildAdded(ref(db, `signals/${roomCode}/${seat}`), (sigSnap) => {
-  const { from, signal } = sigSnap.val();
-  if (from === mySeat) return;
+function setupMySeat(seat, name) { const box = document.getElementById(seat); const vid = box.querySelector("video"); if (vid) { vid.srcObject = localStream; vid.muted = true; vid.play(); } box.querySelector(".name").textContent = name; }
 
-  if (!peers[seat]) {
-    createPeer(seat, false);
-  }
+function hideSeats(seats) { seats.forEach(s => { const el = document.getElementById(s); if (el) el.style.display = "none"; }); }
 
-  peers[seat].signal(signal);
-});
+function injectCommanderUI() { console.log("Injecting Commander overlay"); // life total UI is already default }
 
-}); });
+function injectYGOUI() { console.log("Injecting Yu-Gi-Oh! overlay"); document.querySelectorAll(".life").forEach(el => el.textContent = "8000"); }
 
-function createPeer(targetSeat, initiator) { const peer = new SimplePeer({ initiator, trickle: false, stream: localStream });
+function injectDigimonUI() { console.log("Injecting Digimon overlay"); const memory = document.createElement("div"); memory.id = "memoryBar"; memory.style.cssText = position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); display: flex; background: #333; border: 2px solid #888; border-radius: 12px; overflow: hidden; z-index: 5;; for (let i = 10; i >= -10; i--) { const seg = document.createElement("div"); seg.textContent = i; seg.style.cssText = padding: 8px; min-width: 32px; text-align: center; color: white; background: ${i === 0 ? '#444' : '#222'}; cursor: pointer;; seg.onclick = () => document.querySelectorAll("#memoryBar div").forEach((el, idx) => { el.style.background = (el.textContent == i) ? '#0ff' : (el.textContent == '0' ? '#444' : '#222'); }); memory.appendChild(seg); } document.body.appendChild(memory); }
 
-peer.on("signal", (data) => { const payload = { from: mySeat, signal: data }; push(ref(db, signals/${roomCode}/${targetSeat}), payload); });
+function injectDefaultUI() { console.log("Using default UI layout."); }
 
-peer.on("stream", (stream) => { const box = document.getElementById(targetSeat); if (box) { const vid = box.querySelector("video"); vid.srcObject = stream; vid.play(); } });
-
-peer.on("error", (err) => console.error("Peer error:", err)); peers[targetSeat] = peer; }
+function syncWithPeers(players) { console.log("Connecting peers:", players); // Hook in SimplePeer and Firebase signaling logic (you’ve already built this part) }
 
