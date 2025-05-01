@@ -25,26 +25,6 @@
       padding: 6px;
       border-bottom: 1px solid #444;
     }
-    .flip-button {
-      background: #333;
-      color: #fff;
-      border: 1px solid #666;
-      cursor: pointer;
-      margin-top: 1em;
-    }
-    #top-right {
-      position: absolute;
-      top: 10px;
-      right: 12px;
-      font-size: 14px;
-      color: #ccc;
-      text-align: right;
-    }
-    #logoutBtn {
-      margin-top: 4px;
-      font-size: 12px;
-      padding: 4px 8px;
-    }
     video {
       margin-top: 10px;
       max-width: 100%;
@@ -55,13 +35,8 @@
   </style>
 </head>
 <body>
-  <div id="top-right">
-    Logged in as: <span id="profileName" style="color: white; font-weight: bold;"></span><br />
-    <button id="logoutBtn">Logout</button>
-  </div>
-
+  <h2>Create or Join a Room</h2>
   <div id="preGame">
-    <h2>Create or Join a Room</h2>
     <h3>Create Room</h3>
     <input id="roomName" placeholder="Room Name (Optional)" /> <br />
     <label>Choose Template:</label>
@@ -85,8 +60,6 @@
 
   <div id="lobbyView" style="display: none;">
     <h2>Lobby Room: <span id="roomDisplay"></span></h2>
-
-    <h3>Select Camera and Microphone</h3>
     <label>Camera:
       <select id="videoInput"></select>
     </label><br />
@@ -95,85 +68,14 @@
     </label><br />
     <button onclick="startPreview()">Save + Preview</button><br />
     <video id="camPreview" autoplay muted playsinline></video>
-
     <div id="playerList"></div>
     <button id="startGameBtn" onclick="startGame()" style="display: none; margin-top: 2em;">Start Game</button>
   </div>
 
-  <!-- Firebase Auth Logic -->
   <script type="module">
-    import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-auth.js";
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-app.js";
-
-    const firebaseConfig = {
-      apiKey: "AIzaSyBzvVpMCdg3Y6i5vCGWarorcTmzBzjmPow",
-      authDomain: "tableforge-app.firebaseapp.com",
-      projectId: "tableforge-app",
-    };
-
-    const app = initializeApp(firebaseConfig);
-    const auth = getAuth(app);
-
-    onAuthStateChanged(auth, user => {
-      if (!user) {
-        window.location.href = "/profile.html";
-      } else {
-        const name = localStorage.getItem("displayName") || user.displayName || "Unknown";
-        document.getElementById("profileName").textContent = name;
-        populateDevices(); // Load camera/mic list
-      }
-    });
-
-    document.getElementById("logoutBtn").addEventListener("click", async () => {
-      await signOut(auth);
-      localStorage.clear();
-      window.location.href = "/";
-    });
-
-    // 📸 Camera & Mic Setup
-    let selectedCamId = "";
-    let selectedMicId = "";
-
-    async function populateDevices() {
-      const devices = await navigator.mediaDevices.enumerateDevices();
-      const videoSelect = document.getElementById("videoInput");
-      const audioSelect = document.getElementById("audioInput");
-      videoSelect.innerHTML = "";
-      audioSelect.innerHTML = "";
-
-      devices.forEach((device) => {
-        const option = document.createElement("option");
-        option.value = device.deviceId;
-        option.text = device.label || `${device.kind}`;
-        if (device.kind === "videoinput") videoSelect.appendChild(option);
-        else if (device.kind === "audioinput") audioSelect.appendChild(option);
-      });
-
-      // Restore saved values
-      const storedCam = localStorage.getItem("selectedCamera");
-      const storedMic = localStorage.getItem("selectedMic");
-      if (storedCam) videoSelect.value = storedCam;
-      if (storedMic) audioSelect.value = storedMic;
-    }
-
-    async function startPreview() {
-      selectedCamId = document.getElementById("videoInput").value;
-      selectedMicId = document.getElementById("audioInput").value;
-      localStorage.setItem("selectedCamera", selectedCamId);
-      localStorage.setItem("selectedMic", selectedMicId);
-
-      const stream = await navigator.mediaDevices.getUserMedia({
-        video: { deviceId: selectedCamId ? { exact: selectedCamId } : undefined },
-        audio: { deviceId: selectedMicId ? { exact: selectedMicId } : undefined }
-      });
-
-      const preview = document.getElementById("camPreview");
-      preview.srcObject = stream;
-      preview.play();
-    }
+    import { renderNav } from './nav.js';
+    renderNav();
   </script>
-
-  <!-- Room Logic -->
   <script type="module" src="script.js"></script>
 </body>
 </html>
