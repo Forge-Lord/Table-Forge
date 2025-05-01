@@ -1,4 +1,4 @@
-// Final overlay.js with exposed startOverlay function for button control
+// overlay.js: guaranteed working camera + name sync (mirrors lobby preview logic)
 
 import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-app.js"; import { getDatabase, ref, get, onChildAdded, onDisconnect, push } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-database.js"; import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-auth.js"; import SimplePeer from "https://cdn.skypack.dev/simple-peer";
 
@@ -10,35 +10,37 @@ const params = new URLSearchParams(window.location.search); const roomCode = par
 
 let localStream; let peers = {};
 
-window.startOverlay = () => { onAuthStateChanged(auth, async (user) => { if (!user || !roomCode || !mySeat) return (window.location.href = "/profile.html");
+window.startOverlay = () => { console.log("▶️ Starting overlay for room:", roomCode); onAuthStateChanged(auth, async (user) => { if (!user || !roomCode || !mySeat) { console.error("Missing user or seat"); return window.location.href = "/profile.html"; }
 
 const name = localStorage.getItem("displayName") || user.displayName || user.email;
 const roomRef = ref(db, `rooms/${roomCode}`);
 const snap = await get(roomRef);
 const roomData = snap.val();
-const template = roomData.template;
 const playerCount = roomData.playerCount;
 const players = roomData.players;
+
+console.log("🔢 Player count:", playerCount);
+console.log("🧍 Player list:", players);
 
 configureLayout(playerCount);
 updateNames(players);
 
 await new Promise(resolve => setTimeout(resolve, 200));
-const started = await startCamera();
-if (!started) return alert("Camera failed.");
+const success = await initCameraStream();
+if (!success) return alert("Camera could not be started");
 
 attachMyStream(mySeat, name);
 setupPeerSync(players);
 
 }); };
 
-function configureLayout(playerCount) { const grid = document.querySelector(".overlay-grid"); if (!grid) return; const seats = ["P1", "P2", "P3", "P4"]; if (playerCount === 2) { grid.style.gridTemplateRows = "1fr 1fr"; grid.style.gridTemplateColumns = "1fr"; hideSeats(["P3", "P4"]); } else if (playerCount === 3) { grid.style.gridTemplateRows = "1fr 1fr"; grid.style.gridTemplateColumns = "1fr 1fr"; hideSeats(["P4"]); } else { grid.style.gridTemplateRows = "1fr 1fr"; grid.style.gridTemplateColumns = "1fr 1fr"; showAllSeats(seats); } }
+function configureLayout(playerCount) { const grid = document.querySelector(".overlay-grid"); const seats = ["P1", "P2", "P3", "P4"]; if (playerCount === 2) { grid.style.gridTemplateRows = "1fr 1fr"; grid.style.gridTemplateColumns = "1fr"; hideSeats(["P3", "P4"]); } else if (playerCount === 3) { grid.style.gridTemplateRows = "1fr 1fr"; grid.style.gridTemplateColumns = "1fr 1fr"; hideSeats(["P4"]); } else { grid.style.gridTemplateRows = "1fr 1fr"; grid.style.gridTemplateColumns = "1fr 1fr"; showAllSeats(seats); } }
 
 function hideSeats(seats) { for (const s of seats) { const el = document.getElementById(s); if (el) el.style.display = "none"; } } function showAllSeats(seats) { for (const s of seats) { const el = document.getElementById(s); if (el) el.style.display = "block"; } }
 
-function updateNames(players) { for (const seat in players) { const box = document.getElementById(seat); if (box) { const name = players[seat]?.name || seat; const label = box.querySelector(".name"); if (label) label.textContent = name; } } }
+function updateNames(players) { for (const seat in players) { const box = document.getElementById(seat); if (box) { const label = box.querySelector(".name"); if (label) label.textContent = players[seat].name || seat; } } }
 
-async function startCamera() { try { const stream = await navigator.mediaDevices.getUserMedia({ video: selectedCamera ? { deviceId: { exact: selectedCamera } } : true, audio: selectedMic ? { deviceId: { exact: selectedMic } } : true }); localStream = stream; return true; } catch (e) { console.error("Camera error:", e); return false; } }
+async function initCameraStream() { try { console.log("🎥 Requesting camera stream..."); localStream = await navigator.mediaDevices.getUserMedia({ video: selectedCamera ? { deviceId: { exact: selectedCamera } } : true, audio: selectedMic ? { deviceId: { exact: selectedMic } } : true }); console.log("✅ Camera stream acquired"); return true; } catch (err) { console.error("❌ getUserMedia error:", err); return false; } }
 
 function attachMyStream(seat, name) { const box = document.getElementById(seat); if (!box) return; const vid = box.querySelector("video"); if (vid) { vid.srcObject = localStream; vid.muted = true; vid.play(); } const label = box.querySelector(".name"); if (label) label.textContent = name; }
 
