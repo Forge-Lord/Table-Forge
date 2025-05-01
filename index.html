@@ -24,20 +24,6 @@
       margin-bottom: 2em;
     }
 
-    button {
-      padding: 12px 24px;
-      font-size: 16px;
-      background: #333;
-      color: white;
-      border: none;
-      border-radius: 6px;
-      cursor: pointer;
-    }
-
-    button:hover {
-      background: #555;
-    }
-
     footer {
       position: fixed;
       bottom: 20px;
@@ -51,10 +37,14 @@
 <body>
   <h1>Welcome to Table Forge</h1>
   <p>Join your friends and play TCGs with real-time video and overlays.</p>
-  <button onclick="window.location.href='/profile.html'">Sign In to Continue</button>
 
   <footer>
     &copy; 2025 Table Forge – Powered by the Forge Spirit
   </footer>
+
+  <script type="module">
+    import { renderNav } from './nav.js';
+    renderNav();
+  </script>
 </body>
 </html>
