@@ -1,98 +1,79 @@
-import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-app.js";
+// overlay.js
+import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-app.js";
 import {
-  getDatabase,
-  ref,
-  onValue,
-  update
-} from "https://www.gstatic.com/firebasejs/9.22.0/firebase-database.js";
-import { setupAVMesh } from "./av.js";
+  getDatabase, ref, onValue, update
+} from "https://www.gstatic.com/firebasejs/9.22.2/firebase-database.js";
 
+// ✅ Your Firebase config
 const firebaseConfig = {
   apiKey: "AIzaSyBzvVpMCdg3Y6i5vCGWarorcTmzBzjmPow",
   authDomain: "tableforge-app.firebaseapp.com",
+  databaseURL: "https://tableforge-app-default-rtdb.firebaseio.com",
   projectId: "tableforge-app",
-  databaseURL: "https://tableforge-app-default-rtdb.firebaseio.com"
+  appId: "1:708497363618:web:39da060b48681944923dfb"
 };
 
 const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
-const roomId = new URLSearchParams(location.search).get("room");
-const displayName = localStorage.getItem("displayName") || "Unknown";
 
-const layout = document.getElementById("overlayGrid");
-const seatMap = { p1: "top-left", p2: "top-right", p3: "bottom-left", p4: "bottom-right" };
+const params = new URLSearchParams(window.location.search);
+const roomCode = params.get("room");
+const seat = localStorage.getItem("mySeat") || "P1";
 
-let localStream = null; // Make sure this is set by setupAVMesh
+if (!roomCode) {
+  alert("Missing room code in URL.");
+  throw new Error("Room not specified");
+}
 
-onValue(ref(db, `rooms/${roomId}`), snap => {
-  const data = snap.val();
-  if (!data) return;
+const playerMap = {
+  P1: "p1",
+  P2: "p2",
+  P3: "p3",
+  P4: "p4"
+};
 
-  layout.innerHTML = "";
-  const players = data.players || {};
-  const template = data.template || "commander";
-  const playerCount = Object.keys(players).length;
-
-  layout.style.gridTemplate = playerCount === 2 ? "1fr / 1fr" : "1fr 1fr / 1fr 1fr";
-
-  Object.values(players).forEach(player => {
-    const seat = player.seat;
-    const box = document.createElement("div");
-    box.className = "player-box";
-    box.id = `seat-${seat}`;
-
-    const vid = document.createElement("video");
-    vid.id = `video-${seat}`;
-    vid.autoplay = true;
-    vid.playsInline = true;
-    box.appendChild(vid);
-
-    const ui = document.createElement("div");
-    ui.className = `player-ui ${seatMap[seat]}`;
-    ui.innerHTML = `
-      <strong>${player.name}</strong>
-      <div>
-        <button onclick="adjustLife('${seat}', -1)">-</button>
-        <input id="life-${seat}" value="${player.life}" />
-        <button onclick="adjustLife('${seat}', 1)">+</button>
-      </div>
-      <input id="stat-${seat}" value="${player.status || ''}" placeholder="Status..." />
-      ${player.name === displayName ? `
-        <button onclick="toggleMic()">Mute</button>
-        <button onclick="toggleCam()">Toggle Cam</button>
-      ` : ""}
-      <button onclick="save('${seat}', '${player.name}', '${template}')">Save</button>
-    `;
-    box.appendChild(ui);
-    layout.appendChild(box);
+async function loadCamera(targetDiv) {
+  const camId = localStorage.getItem("selectedCamera");
+  const micId = localStorage.getItem("selectedMic");
+  const stream = await navigator.mediaDevices.getUserMedia({
+    video: camId ? { deviceId: { exact: camId } } : true,
+    audio: micId ? { deviceId: { exact: micId } } : false
   });
+  const video = targetDiv.querySelector("video");
+  video.srcObject = stream;
+  video.play();
+}
 
-  setupAVMesh(Object.values(players), displayName, roomId).then(stream => {
-    localStream = stream; // 💡 Assign for use in mic/cam toggle
+// Attach camera and bind input events for YOUR seat
+function setupLocalSeat(seatId) {
+  const divId = playerMap[seatId];
+  const container = document.getElementById(divId);
+  loadCamera(container);
+
+  ["name", "life", "status"].forEach((field) => {
+    const el = document.getElementById(`${field}${divId.slice(1)}`);
+    el.addEventListener("input", () => {
+      const updates = {};
+      updates[`rooms/${roomCode}/players/${seatId}/${field}`] = el.value;
+      update(ref(db), updates);
+    });
   });
-});
+}
 
-window.adjustLife = (seat, delta) => {
-  const el = document.getElementById(`life-${seat}`);
-  el.value = parseInt(el.value) + delta;
-};
+// Watch all player slots
+function bindAllSeats() {
+  const roomRef = ref(db, `rooms/${roomCode}/players`);
+  onValue(roomRef, (snapshot) => {
+    const data = snapshot.val() || {};
+    Object.keys(playerMap).forEach((seatId) => {
+      const divId = playerMap[seatId].slice(1);
+      const p = data[seatId] || {};
+      document.getElementById(`name${divId}`).value = p.name || "";
+      document.getElementById(`life${divId}`).value = p.life || "40";
+      document.getElementById(`status${divId}`).value = p.status || "";
+    });
+  });
+}
 
-window.save = (seat, name, template) => {
-  const life = parseInt(document.getElementById(`life-${seat}`).value);
-  const status = document.getElementById(`stat-${seat}`).value;
-  update(ref(db, `rooms/${roomId}/players/${name}`), { life, status });
-};
-
-window.toggleCam = () => {
-  const videoTrack = localStream?.getVideoTracks?.()[0];
-  if (videoTrack) {
-    videoTrack.enabled = !videoTrack.enabled;
-  }
-};
-
-window.toggleMic = () => {
-  const audioTrack = localStream?.getAudioTracks?.()[0];
-  if (audioTrack) {
-    audioTrack.enabled = !audioTrack.enabled;
-  }
-};
+setupLocalSeat(seat);
+bindAllSeats();
