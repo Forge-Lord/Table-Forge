@@ -2,7 +2,7 @@
 <html>
 <head>
   <title>Table Forge Overlay</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <style>
     body {
       margin: 0;
@@ -10,129 +10,54 @@
       overflow: hidden;
       font-family: sans-serif;
     }
-    .player {
-      position: absolute;
-      width: 320px;
-      height: 240px;
-      border: 2px solid #555;
-      border-radius: 12px;
+    .overlay-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      grid-template-rows: 1fr 1fr;
+      width: 100vw;
+      height: 100vh;
+    }
+    .player-box {
+      position: relative;
+      border: 2px solid #444;
+      margin: 4px;
+      background: #000;
       overflow: hidden;
+      border-radius: 12px;
     }
-    .player-ui {
-      position: absolute;
-      bottom: 0;
+    video {
       width: 100%;
-      background: rgba(0,0,0,0.6);
-      color: white;
-      padding: 4px;
-      text-align: center;
-      font-size: 14px;
+      height: 100%;
+      object-fit: cover;
     }
-    .player-ui input {
-      background: transparent;
-      border: none;
+    .ui-overlay {
+      position: absolute;
+      bottom: 8px;
+      left: 8px;
       color: white;
-      text-align: center;
+      background: rgba(0, 0, 0, 0.5);
+      padding: 4px 10px;
+      border-radius: 6px;
       font-size: 14px;
-      width: 80px;
+      display: flex;
+      flex-direction: column;
     }
-    .life-buttons {
+    .name {
+      font-weight: bold;
+    }
+    .life {
       margin-top: 4px;
     }
-    .life-buttons button {
-      background: #333;
-      color: white;
-      border: none;
-      margin: 0 4px;
-      padding: 4px 8px;
-      cursor: pointer;
-    }
-
-    #p1 { top: 10px; left: 10px; }
-    #p2 { top: 10px; right: 10px; }
-    #p3 { bottom: 10px; left: 10px; }
-    #p4 { bottom: 10px; right: 10px; }
   </style>
 </head>
 <body>
-  <div class="player" id="p1">
-    <video autoplay muted playsinline width="100%" height="100%"></video>
-    <div class="player-ui">
-      <input type="text" id="name1" placeholder="Player 1" />
-      <div class="life-buttons">
-        <button onclick="adjustLife(1, -1)">-</button>
-        <input type="text" id="life1" value="40">
-        <button onclick="adjustLife(1, 1)">+</button>
-      </div>
-      <input type="text" id="status1" placeholder="Status..." />
-    </div>
+  <div class="overlay-grid">
+    <div class="player-box" id="P1"><video autoplay muted playsinline></video><div class="ui-overlay"><div class="name">Player 1</div><div class="life">40</div></div></div>
+    <div class="player-box" id="P2"><video autoplay muted playsinline></video><div class="ui-overlay"><div class="name">Player 2</div><div class="life">40</div></div></div>
+    <div class="player-box" id="P3"><video autoplay muted playsinline></video><div class="ui-overlay"><div class="name">Player 3</div><div class="life">40</div></div></div>
+    <div class="player-box" id="P4"><video autoplay muted playsinline></video><div class="ui-overlay"><div class="name">Player 4</div><div class="life">40</div></div></div>
   </div>
 
-  <div class="player" id="p2">
-    <video autoplay muted playsinline width="100%" height="100%"></video>
-    <div class="player-ui">
-      <input type="text" id="name2" placeholder="Player 2" />
-      <div class="life-buttons">
-        <button onclick="adjustLife(2, -1)">-</button>
-        <input type="text" id="life2" value="40">
-        <button onclick="adjustLife(2, 1)">+</button>
-      </div>
-      <input type="text" id="status2" placeholder="Status..." />
-    </div>
-  </div>
-
-  <div class="player" id="p3">
-    <video autoplay muted playsinline width="100%" height="100%"></video>
-    <div class="player-ui">
-      <input type="text" id="name3" placeholder="Player 3" />
-      <div class="life-buttons">
-        <button onclick="adjustLife(3, -1)">-</button>
-        <input type="text" id="life3" value="40">
-        <button onclick="adjustLife(3, 1)">+</button>
-      </div>
-      <input type="text" id="status3" placeholder="Status..." />
-    </div>
-  </div>
-
-  <div class="player" id="p4">
-    <video autoplay muted playsinline width="100%" height="100%"></video>
-    <div class="player-ui">
-      <input type="text" id="name4" placeholder="Player 4" />
-      <div class="life-buttons">
-        <button onclick="adjustLife(4, -1)">-</button>
-        <input type="text" id="life4" value="40">
-        <button onclick="adjustLife(4, 1)">+</button>
-      </div>
-      <input type="text" id="status4" placeholder="Status..." />
-    </div>
-  </div>
-
-  <script>
-    // Load camera for this player
-    async function loadCamera(videoEl) {
-      const camId = localStorage.getItem("selectedCamera");
-      const micId = localStorage.getItem("selectedMic");
-      const stream = await navigator.mediaDevices.getUserMedia({
-        video: camId ? { deviceId: { exact: camId } } : true,
-        audio: micId ? { deviceId: { exact: micId } } : false
-      });
-      videoEl.srcObject = stream;
-      videoEl.play();
-    }
-
-    // Assign camera to one player for now (P1)
-    window.onload = () => {
-      const video = document.querySelector("#p1 video");
-      loadCamera(video);
-    };
-
-    function adjustLife(playerNum, delta) {
-      const input = document.getElementById(`life${playerNum}`);
-      let val = parseInt(input.value) || 0;
-      val += delta;
-      input.value = val;
-    }
-  </script>
   <script type="module" src="overlay.js"></script>
 </body>
 </html>
