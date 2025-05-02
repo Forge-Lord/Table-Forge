@@ -1,7 +1,7 @@
+// ✅ overlay.js - Final working version with sync, names, life, and camera peer
 import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-app.js";
 import { getDatabase, ref, get, onChildAdded, onDisconnect, push } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-database.js";
 import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-auth.js";
-import SimplePeer from "https://unpkg.com/simple-peer@9.11.1/simplepeer.min.js"; // ✅ FIXED
 
 const firebaseConfig = {
   apiKey: "AIzaSyBzvVpMCdg3Y6i5vCGWarorcTmzBzjmPow",
@@ -24,8 +24,9 @@ let selectedMic = localStorage.getItem("selectedMic") || "";
 let localStream;
 let peers = {};
 
-window.startOverlay = () => {
+function startOverlay() {
   console.log("▶️ Start Overlay triggered");
+
   onAuthStateChanged(auth, async (user) => {
     if (!user || !roomCode || !mySeat) {
       alert("Missing user or room context");
@@ -43,11 +44,12 @@ window.startOverlay = () => {
 
     const camSuccess = await startPreviewCompatibleCamera();
     if (!camSuccess) return;
+    console.log("📷 Local camera stream ready");
 
     attachMyStream(mySeat, name);
     setupPeerSync(players);
   });
-};
+}
 
 function configureLayout(playerCount) {
   const grid = document.querySelector(".overlay-grid");
@@ -106,10 +108,9 @@ async function startPreviewCompatibleCamera() {
       audio: selectedMic ? { deviceId: { exact: selectedMic } } : true
     });
     localStream = stream;
-    console.log("✅ Camera and mic initialized");
     return true;
   } catch (err) {
-    console.error("❌ Failed to access media devices:", err);
+    console.error("❌ Camera preview failed:", err);
     return false;
   }
 }
@@ -121,7 +122,7 @@ function attachMyStream(seat, name) {
   if (vid && localStream) {
     vid.srcObject = localStream;
     vid.muted = true;
-    setTimeout(() => vid.play().catch(err => console.warn("⚠️ play() failed:", err)), 100);
+    setTimeout(() => vid.play().catch(err => console.warn("play() failed", err)), 100);
   }
   const label = box.querySelector(".name");
   if (label) label.textContent = name;
@@ -158,11 +159,12 @@ function setupPeerSync(players) {
 
 function createPeer(targetSeat, initiator) {
   try {
-    const peer = new SimplePeer({ initiator, trickle: false, stream: localStream });
+    const peer = new window.SimplePeer({ initiator, trickle: false, stream: localStream });
 
     peer.on("signal", (data) => {
       const payload = { from: mySeat, signal: data };
       push(ref(db, `signals/${roomCode}/${targetSeat}`), payload);
+      console.log(`📡 Signal sent to ${targetSeat}`);
     });
 
     peer.on("stream", (stream) => {
@@ -170,14 +172,12 @@ function createPeer(targetSeat, initiator) {
       const vid = box?.querySelector("video");
       if (vid) {
         vid.srcObject = stream;
-        vid.play().catch(err => console.warn("⚠️ Remote play failed:", err));
+        vid.play().catch(err => console.warn("Remote play failed", err));
         console.log(`🎥 Video stream connected from ${targetSeat}`);
       }
     });
 
-    peer.on("error", (err) => {
-      console.error(`❌ Peer error (${targetSeat}):`, err);
-    });
+    peer.on("error", (err) => console.error(`❌ Peer error (${targetSeat}):`, err));
 
     peers[targetSeat] = peer;
   } catch (err) {
@@ -185,11 +185,13 @@ function createPeer(targetSeat, initiator) {
   }
 }
 
-window.adjustLife = (seat, delta) => {
+function adjustLife(seat, delta) {
   const input = document.getElementById(`life-${seat}`);
   if (input) {
     const newVal = parseInt(input.value || "0", 10) + delta;
     input.value = newVal;
   }
-};
+}
+
 window.startOverlay = startOverlay;
+window.adjustLife = adjustLife;
