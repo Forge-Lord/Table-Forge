@@ -45,8 +45,6 @@
     .name {
       font-weight: bold;
     }
-
-    /* ✅ Life Controls Styling */
     .life-controls {
       display: flex;
       align-items: center;
@@ -71,7 +69,6 @@
       border: 1px solid #555;
       border-radius: 4px;
     }
-
     #startBtn {
       position: absolute;
       top: 50%;
@@ -96,9 +93,9 @@
       <div class="ui-overlay">
         <div class="name">P1</div>
         <div class="life-controls">
-          <button onclick="adjustLife('P1', -1)">−</button>
+          <button type="button" onclick="adjustLife('P1', -1)">−</button>
           <input type="number" id="life-P1" value="40" />
-          <button onclick="adjustLife('P1', 1)">+</button>
+          <button type="button" onclick="adjustLife('P1', 1)">+</button>
         </div>
       </div>
     </div>
@@ -107,9 +104,9 @@
       <div class="ui-overlay">
         <div class="name">P2</div>
         <div class="life-controls">
-          <button onclick="adjustLife('P2', -1)">−</button>
+          <button type="button" onclick="adjustLife('P2', -1)">−</button>
           <input type="number" id="life-P2" value="40" />
-          <button onclick="adjustLife('P2', 1)">+</button>
+          <button type="button" onclick="adjustLife('P2', 1)">+</button>
         </div>
       </div>
     </div>
@@ -118,9 +115,9 @@
       <div class="ui-overlay">
         <div class="name">P3</div>
         <div class="life-controls">
-          <button onclick="adjustLife('P3', -1)">−</button>
+          <button type="button" onclick="adjustLife('P3', -1)">−</button>
           <input type="number" id="life-P3" value="40" />
-          <button onclick="adjustLife('P3', 1)">+</button>
+          <button type="button" onclick="adjustLife('P3', 1)">+</button>
         </div>
       </div>
     </div>
@@ -129,14 +126,16 @@
       <div class="ui-overlay">
         <div class="name">P4</div>
         <div class="life-controls">
-          <button onclick="adjustLife('P4', -1)">−</button>
+          <button type="button" onclick="adjustLife('P4', -1)">−</button>
           <input type="number" id="life-P4" value="40" />
-          <button onclick="adjustLife('P4', 1)">+</button>
+          <button type="button" onclick="adjustLife('P4', 1)">+</button>
         </div>
       </div>
     </div>
   </div>
 
+  <!-- ✅ SimplePeer global import -->
+  <script src="https://unpkg.com/simple-peer@9.11.1/simplepeer.min.js"></script>
   <script type="module" src="overlay.js"></script>
   <script>
     document.getElementById("startBtn").addEventListener("click", () => {
