@@ -47,10 +47,15 @@
       padding: 4px;
       font-size: 14px;
     }
+    #rejoinBtn {
+      display: none;
+      margin-bottom: 20px;
+    }
   </style>
 </head>
 <body>
   <h2>Create or Join a Room</h2>
+  <button id="rejoinBtn" onclick="rejoinRoom()">Rejoin Last Room</button>
 
   <div id="createForm">
     <h3>Create Room</h3>
@@ -142,6 +147,11 @@
           roomList.appendChild(div);
         });
       });
+
+      // Show rejoin button if room code exists
+      if (localStorage.getItem("roomCode")) {
+        document.getElementById("rejoinBtn").style.display = "inline-block";
+      }
     }
 
     window.createRoom = async function () {
@@ -176,7 +186,6 @@
       if (!snap.exists()) return alert("Room not found.");
       const data = snap.val();
 
-      // Prevent duplicate join
       for (let i = 1; i <= data.playerCount; i++) {
         const slot = `P${i}`;
         if (data.players[slot]?.name === displayName) {
@@ -231,7 +240,6 @@
         });
       });
 
-      // ✅ All players listen for game start
       onValue(ref(db, `rooms/${code}/started`), (snap) => {
         if (snap.val() === true) {
           window.location.href = `/overlay.html?room=${code}`;
@@ -290,6 +298,14 @@
       const adj = ["blazing", "twilight", "hidden", "ember"];
       const noun = ["vault", "spire", "forge", "golem"];
       return `${adj[Math.floor(Math.random() * adj.length)]}-${noun[Math.floor(Math.random() * noun.length)]}-${Math.floor(Math.random() * 900 + 100)}`;
+    }
+  </script>
+
+  <script>
+    function rejoinRoom() {
+      const lastRoom = localStorage.getItem("roomCode");
+      if (!lastRoom) return alert("No recent room code found.");
+      window.location.href = `/overlay.html?room=${lastRoom}`;
     }
   </script>
 </body>
