@@ -1,4 +1,4 @@
-// ✅ overlay.js - Final working version with sync, names, life, and camera peer
+// ✅ overlay.js - Debug version with verbose logs and fallback-safe camera sync
 import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-app.js";
 import { getDatabase, ref, get, onChildAdded, onDisconnect, push } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-database.js";
 import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-auth.js";
@@ -23,6 +23,7 @@ let selectedCamera = localStorage.getItem("selectedCamera") || "";
 let selectedMic = localStorage.getItem("selectedMic") || "";
 let localStream;
 let peers = {};
+let peerConnected = {};
 
 function startOverlay() {
   console.log("▶️ Start Overlay triggered");
@@ -41,6 +42,7 @@ function startOverlay() {
 
     configureLayout(playerCount);
     updateNames(players);
+    syncLifeFromFirebase(players);
 
     const camSuccess = await startPreviewCompatibleCamera();
     if (!camSuccess) return;
@@ -48,13 +50,14 @@ function startOverlay() {
 
     attachMyStream(mySeat, name);
     setupPeerSync(players);
+    startLifeSync(name);
   });
 }
 
 function configureLayout(playerCount) {
   const grid = document.querySelector(".overlay-grid");
-  if (!grid) return;
   const seats = ["P1", "P2", "P3", "P4"];
+  if (!grid) return;
   if (playerCount === 2) {
     grid.style.gridTemplateRows = "1fr 1fr";
     grid.style.gridTemplateColumns = "1fr";
@@ -87,9 +90,9 @@ function showAllSeats(seats) {
 function updateNames(players) {
   for (const seat in players) {
     const box = document.getElementById(seat);
-    if (box) {
-      const label = box.querySelector(".name");
-      if (label) label.textContent = players[seat].name || seat;
+    const label = box?.querySelector(".name");
+    if (box && label) {
+      label.textContent = players[seat].name || seat;
     }
   }
 }
@@ -99,10 +102,8 @@ async function startPreviewCompatibleCamera() {
     const devices = await navigator.mediaDevices.enumerateDevices();
     const cams = devices.filter(d => d.kind === "videoinput");
     const mics = devices.filter(d => d.kind === "audioinput");
-
     if (!selectedCamera && cams.length) selectedCamera = cams[0].deviceId;
     if (!selectedMic && mics.length) selectedMic = mics[0].deviceId;
-
     const stream = await navigator.mediaDevices.getUserMedia({
       video: selectedCamera ? { deviceId: { exact: selectedCamera } } : true,
       audio: selectedMic ? { deviceId: { exact: selectedMic } } : true
@@ -117,14 +118,13 @@ async function startPreviewCompatibleCamera() {
 
 function attachMyStream(seat, name) {
   const box = document.getElementById(seat);
-  if (!box) return;
-  const vid = box.querySelector("video");
+  const vid = box?.querySelector("video");
+  const label = box?.querySelector(".name");
   if (vid && localStream) {
     vid.srcObject = localStream;
     vid.muted = true;
-    setTimeout(() => vid.play().catch(err => console.warn("play() failed", err)), 100);
+    vid.play().catch(err => console.warn("⚠️ play() failed:", err));
   }
-  const label = box.querySelector(".name");
   if (label) label.textContent = name;
 }
 
@@ -160,13 +160,11 @@ function setupPeerSync(players) {
 function createPeer(targetSeat, initiator) {
   try {
     const peer = new window.SimplePeer({ initiator, trickle: false, stream: localStream });
-
     peer.on("signal", (data) => {
       const payload = { from: mySeat, signal: data };
       push(ref(db, `signals/${roomCode}/${targetSeat}`), payload);
       console.log(`📡 Signal sent to ${targetSeat}`);
     });
-
     peer.on("stream", (stream) => {
       const box = document.getElementById(targetSeat);
       const vid = box?.querySelector("video");
@@ -176,9 +174,7 @@ function createPeer(targetSeat, initiator) {
         console.log(`🎥 Video stream connected from ${targetSeat}`);
       }
     });
-
     peer.on("error", (err) => console.error(`❌ Peer error (${targetSeat}):`, err));
-
     peers[targetSeat] = peer;
   } catch (err) {
     console.error(`❌ Failed to create peer for ${targetSeat}:`, err);
@@ -190,6 +186,21 @@ function adjustLife(seat, delta) {
   if (input) {
     const newVal = parseInt(input.value || "0", 10) + delta;
     input.value = newVal;
+    push(ref(db, `rooms/${roomCode}/players/${seat}/lifeUpdates`), {
+      value: newVal,
+      at: Date.now()
+    });
+  }
+}
+
+function syncLifeFromFirebase(players) {
+  for (const seat in players) {
+    const lifeRef = ref(db, `rooms/${roomCode}/players/${seat}/lifeUpdates`);
+    onChildAdded(lifeRef, (snap) => {
+      const val = snap.val();
+      const input = document.getElementById(`life-${seat}`);
+      if (input) input.value = val.value;
+    });
   }
 }
 
