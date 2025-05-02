@@ -142,16 +142,16 @@ function setupPeerSync(players) {
     }
   }
 
-  onChildAdded(ref(db, `signals/${roomCode}`), (snap) => {
-    const seat = snap.key;
-    if (seat === mySeat) return;
-    onChildAdded(ref(db, `signals/${roomCode}/${seat}`), (sigSnap) => {
-      const { from, signal } = sigSnap.val();
-      if (from === mySeat) return;
-      if (!peers[seat]) createPeer(seat, false);
-      peers[seat].signal(signal);
-    });
+  for (const seat in players) {
+  if (seat === mySeat) continue;
+  const seatRef = ref(db, `signals/${roomCode}/${seat}`);
+  onChildAdded(seatRef, (sigSnap) => {
+    const { from, signal } = sigSnap.val();
+    if (from === mySeat) return;
+    if (!peers[seat]) createPeer(seat, false);
+    peers[seat].signal(signal);
   });
+}
 }
 
 function createPeer(targetSeat, initiator) {
