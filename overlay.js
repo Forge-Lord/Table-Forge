@@ -53,7 +53,6 @@ window.startOverlay = () => {
 function configureLayout(playerCount) {
   const grid = document.querySelector(".overlay-grid");
   if (!grid) return;
-
   const seats = ["P1", "P2", "P3", "P4"];
   if (playerCount === 2) {
     grid.style.gridTemplateRows = "1fr 1fr";
@@ -108,10 +107,10 @@ async function startPreviewCompatibleCamera() {
       audio: selectedMic ? { deviceId: { exact: selectedMic } } : true
     });
     localStream = stream;
-    console.log("✅ Stream ready, attaching...");
+    console.log("✅ Camera and mic initialized");
     return true;
   } catch (err) {
-    console.error("❌ Camera preview failed:", err);
+    console.error("❌ Failed to access media devices:", err);
     return false;
   }
 }
@@ -119,14 +118,12 @@ async function startPreviewCompatibleCamera() {
 function attachMyStream(seat, name) {
   const box = document.getElementById(seat);
   if (!box) return;
-
   const vid = box.querySelector("video");
   if (vid && localStream) {
     vid.srcObject = localStream;
     vid.muted = true;
-    setTimeout(() => vid.play().catch(err => console.warn("play() failed", err)), 100);
+    setTimeout(() => vid.play().catch(err => console.warn("⚠️ play() failed:", err)), 100);
   }
-
   const label = box.querySelector(".name");
   if (label) label.textContent = name;
 }
@@ -136,72 +133,62 @@ function setupPeerSync(players) {
   const myId = push(myRef).key;
   onDisconnect(ref(db, `signals/${roomCode}/${mySeat}/${myId}`)).remove();
 
+  // Send signals
   for (const seat in players) {
     if (seat !== mySeat && players[seat]?.name) {
-      if (!peers[seat]) createPeer(seat, true); // Send signal
+      if (!peers[seat]) {
+        console.log(`📤 Initiating peer to ${seat}`);
+        createPeer(seat, true);
+      }
     }
   }
 
+  // Listen for signals
   for (const seat in players) {
     if (seat === mySeat) continue;
     const seatRef = ref(db, `signals/${roomCode}/${seat}`);
     onChildAdded(seatRef, (sigSnap) => {
-      const { from, signal } = sigSnap.val();
-      if (from === mySeat) return;
-      if (!peers[seat]) createPeer(seat, false); // Respond to signal
-      peers[seat].signal(signal);
+      const val = sigSnap.val();
+      if (!val || !val.signal || val.from === mySeat) return;
+      if (!peers[seat]) {
+        console.log(`📥 Responding to peer from ${seat}`);
+        createPeer(seat, false);
+      }
+      peers[seat].signal(val.signal);
     });
   }
 }
 
 function createPeer(targetSeat, initiator) {
-  const peer = new SimplePeer({ initiator, trickle: false, stream: localStream });
+  try {
+    const peer = new SimplePeer({
+      initiator,
+      trickle: false,
+      stream: localStream
+    });
 
-  peer.on("signal", (data) => {
-    const payload = { from: mySeat, signal: data };
-    push(ref(db, `signals/${roomCode}/${targetSeat}`), payload);
-  });
+    peer.on("signal", (data) => {
+      console.log(`📡 Signal sent to ${targetSeat}`, data);
+      const payload = { from: mySeat, signal: data };
+      push(ref(db, `signals/${roomCode}/${targetSeat}`), payload);
+    });
 
-  peer.on("stream", (stream) => {
-    const box = document.getElementById(targetSeat);
-    if (box) {
-      const vid = box.querySelector("video");
+    peer.on("stream", (stream) => {
+      const box = document.getElementById(targetSeat);
+      const vid = box?.querySelector("video");
       if (vid) {
         vid.srcObject = stream;
-        vid.play().catch(err => console.warn("Remote play failed", err));
+        vid.play().catch(err => console.warn("⚠️ Remote play failed:", err));
+        console.log(`🎥 Video stream connected from ${targetSeat}`);
       }
-    }
-  });
+    });
 
-  peer.on("error", (err) => console.error("Peer error:", err));
-  peers[targetSeat] = peer;
-}
-// 💡 Life total interaction logic
-document.querySelectorAll(".player-box").forEach((box) => {
-  const lifeDiv = box.querySelector(".life");
-  const seat = box.id;
+    peer.on("error", (err) => {
+      console.error(`❌ Peer error (${targetSeat}):`, err);
+    });
 
-  if (!lifeDiv) return;
-
-  const decrement = document.createElement("button");
-  decrement.textContent = "−";
-  decrement.style.marginRight = "8px";
-  decrement.onclick = () => {
-    const current = parseInt(lifeDiv.textContent) || 0;
-    lifeDiv.textContent = current - 1;
-  };
-
-  const increment = document.createElement("button");
-  increment.textContent = "+";
-  increment.style.marginLeft = "8px";
-  increment.onclick = () => {
-    const current = parseInt(lifeDiv.textContent) || 0;
-    lifeDiv.textContent = current + 1;
-  };
-
-  // Insert buttons only if this is *your* seat
-  if (seat === mySeat) {
-    lifeDiv.before(decrement);
-    lifeDiv.after(increment);
+    peers[targetSeat] = peer;
+  } catch (err) {
+    console.error(`❌ Failed to create peer for ${targetSeat}:`, err);
   }
-});
+}
