@@ -176,3 +176,32 @@ function createPeer(targetSeat, initiator) {
   peer.on("error", (err) => console.error("Peer error:", err));
   peers[targetSeat] = peer;
 }
+// 💡 Life total interaction logic
+document.querySelectorAll(".player-box").forEach((box) => {
+  const lifeDiv = box.querySelector(".life");
+  const seat = box.id;
+
+  if (!lifeDiv) return;
+
+  const decrement = document.createElement("button");
+  decrement.textContent = "−";
+  decrement.style.marginRight = "8px";
+  decrement.onclick = () => {
+    const current = parseInt(lifeDiv.textContent) || 0;
+    lifeDiv.textContent = current - 1;
+  };
+
+  const increment = document.createElement("button");
+  increment.textContent = "+";
+  increment.style.marginLeft = "8px";
+  increment.onclick = () => {
+    const current = parseInt(lifeDiv.textContent) || 0;
+    lifeDiv.textContent = current + 1;
+  };
+
+  // Insert buttons only if this is *your* seat
+  if (seat === mySeat) {
+    lifeDiv.before(decrement);
+    lifeDiv.after(increment);
+  }
+});
