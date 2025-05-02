@@ -1,4 +1,4 @@
-// ✅ overlay.js - Debug version with verbose logs and fallback-safe camera sync
+// ✅ overlay.js - Enhanced peer debug version with cam fallback
 import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-app.js";
 import { getDatabase, ref, get, onChildAdded, onDisconnect, push } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-database.js";
 import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-auth.js";
@@ -23,34 +23,27 @@ let selectedCamera = localStorage.getItem("selectedCamera") || "";
 let selectedMic = localStorage.getItem("selectedMic") || "";
 let localStream;
 let peers = {};
-let peerConnected = {};
 
 function startOverlay() {
   console.log("▶️ Start Overlay triggered");
-
   onAuthStateChanged(auth, async (user) => {
     if (!user || !roomCode || !mySeat) {
       alert("Missing user or room context");
       return window.location.href = "/profile.html";
     }
-
     const name = localStorage.getItem("displayName") || user.displayName || user.email;
     const snap = await get(ref(db, `rooms/${roomCode}`));
     const roomData = snap.val();
     const playerCount = roomData.playerCount;
     const players = roomData.players;
-
     configureLayout(playerCount);
     updateNames(players);
     syncLifeFromFirebase(players);
-
     const camSuccess = await startPreviewCompatibleCamera();
     if (!camSuccess) return;
     console.log("📷 Local camera stream ready");
-
     attachMyStream(mySeat, name);
     setupPeerSync(players);
-    startLifeSync(name);
   });
 }
 
@@ -160,20 +153,31 @@ function setupPeerSync(players) {
 function createPeer(targetSeat, initiator) {
   try {
     const peer = new window.SimplePeer({ initiator, trickle: false, stream: localStream });
+    let timeout = setTimeout(() => {
+      console.warn(`⏳ No stream from ${targetSeat} after 5s`);
+      const box = document.getElementById(targetSeat);
+      if (box) box.style.border = "2px solid red";
+    }, 5000);
+
     peer.on("signal", (data) => {
       const payload = { from: mySeat, signal: data };
       push(ref(db, `signals/${roomCode}/${targetSeat}`), payload);
       console.log(`📡 Signal sent to ${targetSeat}`);
     });
+
     peer.on("stream", (stream) => {
       const box = document.getElementById(targetSeat);
       const vid = box?.querySelector("video");
       if (vid) {
         vid.srcObject = stream;
         vid.play().catch(err => console.warn("Remote play failed", err));
+        box.style.border = "2px solid limegreen";
+        clearTimeout(timeout);
         console.log(`🎥 Video stream connected from ${targetSeat}`);
       }
     });
+
+    peer.on("connect", () => console.log(`🔗 Peer connected: ${targetSeat}`));
     peer.on("error", (err) => console.error(`❌ Peer error (${targetSeat}):`, err));
     peers[targetSeat] = peer;
   } catch (err) {
