@@ -1,7 +1,7 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-app.js";
 import { getDatabase, ref, get, onChildAdded, onDisconnect, push } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-database.js";
 import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-auth.js";
-import SimplePeer from "https://cdn.skypack.dev/simple-peer";
+import SimplePeer from "https://unpkg.com/simple-peer@9.11.1/simplepeer.min.js"; // ✅ FIXED
 
 const firebaseConfig = {
   apiKey: "AIzaSyBzvVpMCdg3Y6i5vCGWarorcTmzBzjmPow",
@@ -26,7 +26,6 @@ let peers = {};
 
 window.startOverlay = () => {
   console.log("▶️ Start Overlay triggered");
-
   onAuthStateChanged(auth, async (user) => {
     if (!user || !roomCode || !mySeat) {
       alert("Missing user or room context");
@@ -133,7 +132,6 @@ function setupPeerSync(players) {
   const myId = push(myRef).key;
   onDisconnect(ref(db, `signals/${roomCode}/${mySeat}/${myId}`)).remove();
 
-  // Send signals
   for (const seat in players) {
     if (seat !== mySeat && players[seat]?.name) {
       if (!peers[seat]) {
@@ -143,7 +141,6 @@ function setupPeerSync(players) {
     }
   }
 
-  // Listen for signals
   for (const seat in players) {
     if (seat === mySeat) continue;
     const seatRef = ref(db, `signals/${roomCode}/${seat}`);
@@ -161,14 +158,9 @@ function setupPeerSync(players) {
 
 function createPeer(targetSeat, initiator) {
   try {
-    const peer = new SimplePeer({
-      initiator,
-      trickle: false,
-      stream: localStream
-    });
+    const peer = new SimplePeer({ initiator, trickle: false, stream: localStream });
 
     peer.on("signal", (data) => {
-      console.log(`📡 Signal sent to ${targetSeat}`, data);
       const payload = { from: mySeat, signal: data };
       push(ref(db, `signals/${roomCode}/${targetSeat}`), payload);
     });
@@ -192,3 +184,11 @@ function createPeer(targetSeat, initiator) {
     console.error(`❌ Failed to create peer for ${targetSeat}:`, err);
   }
 }
+
+window.adjustLife = (seat, delta) => {
+  const input = document.getElementById(`life-${seat}`);
+  if (input) {
+    const newVal = parseInt(input.value || "0", 10) + delta;
+    input.value = newVal;
+  }
+};
