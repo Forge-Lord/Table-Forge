@@ -138,20 +138,20 @@ function setupPeerSync(players) {
 
   for (const seat in players) {
     if (seat !== mySeat && players[seat]?.name) {
-      if (!peers[seat]) createPeer(seat, true);
+      if (!peers[seat]) createPeer(seat, true); // Send signal
     }
   }
 
   for (const seat in players) {
-  if (seat === mySeat) continue;
-  const seatRef = ref(db, `signals/${roomCode}/${seat}`);
-  onChildAdded(seatRef, (sigSnap) => {
-    const { from, signal } = sigSnap.val();
-    if (from === mySeat) return;
-    if (!peers[seat]) createPeer(seat, false);
-    peers[seat].signal(signal);
-  });
-}
+    if (seat === mySeat) continue;
+    const seatRef = ref(db, `signals/${roomCode}/${seat}`);
+    onChildAdded(seatRef, (sigSnap) => {
+      const { from, signal } = sigSnap.val();
+      if (from === mySeat) return;
+      if (!peers[seat]) createPeer(seat, false); // Respond to signal
+      peers[seat].signal(signal);
+    });
+  }
 }
 
 function createPeer(targetSeat, initiator) {
