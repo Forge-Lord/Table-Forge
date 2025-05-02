@@ -192,3 +192,4 @@ window.adjustLife = (seat, delta) => {
     input.value = newVal;
   }
 };
+window.startOverlay = startOverlay;
