@@ -26,16 +26,21 @@
     button:hover {
       background: #444;
     }
-    video {
-      margin-top: 10px;
-      max-width: 100%;
-      border-radius: 10px;
+    .room-entry {
+      background: #222;
+      color: white;
+      border-radius: 6px;
+      margin: 10px auto;
+      padding: 8px;
+      width: 90%;
+      max-width: 300px;
     }
   </style>
 </head>
 <body>
   <h1>Create or Join a Room</h1>
   <div>
+    <h2>Create Room</h2>
     <label>Game:</label>
     <select id="gameSelector">
       <option value="yugioh">Yu-Gi-Oh!</option>
@@ -50,13 +55,85 @@
     </select>
     <button onclick="createRoom()">Create Room</button>
   </div>
-  <video id="preview" autoplay muted playsinline></video>
-  <script>
-    async function createRoom() {
+
+  <div>
+    <h2>Available Rooms</h2>
+    <div id="roomList">Loading...</div>
+  </div>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-app.js";
+    import { getDatabase, ref, push, onValue } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-database.js";
+
+    // Firebase configuration
+    const firebaseConfig = {
+      apiKey: "AIzaSyBzvVpMCdg3Y6i5vCGWarorcTmzBzjmPow",
+      authDomain: "tableforge-app.firebaseapp.com",
+      databaseURL: "https://tableforge-app-default-rtdb.firebaseio.com",
+      projectId: "tableforge-app",
+      appId: "1:708497363618:web:39da060b48681944923dfb",
+    };
+
+    // Initialize Firebase
+    const app = initializeApp(firebaseConfig);
+    const db = getDatabase(app);
+
+    // Create a new room
+    function createRoom() {
       const game = document.getElementById("gameSelector").value;
       const players = document.getElementById("playerCount").value;
-      alert(`Creating room for ${game} with ${players} players`);
+
+      const roomRef = ref(db, "rooms");
+      const newRoomRef = push(roomRef);
+
+      const roomData = {
+        game,
+        players,
+        createdAt: Date.now(),
+      };
+
+      newRoomRef.set(roomData).then(() => {
+        alert("Room created successfully!");
+        loadRooms();
+      }).catch((error) => {
+        console.error("Error creating room:", error);
+      });
     }
+
+    // Load available rooms
+    function loadRooms() {
+      const roomList = document.getElementById("roomList");
+      roomList.innerHTML = "Loading...";
+
+      const roomRef = ref(db, "rooms");
+      onValue(roomRef, (snapshot) => {
+        const rooms = snapshot.val();
+        roomList.innerHTML = ""; // Clear the list
+
+        if (rooms) {
+          Object.keys(rooms).forEach((key) => {
+            const room = rooms[key];
+            const roomDiv = document.createElement("div");
+            roomDiv.className = "room-entry";
+            roomDiv.textContent = `${room.game} - ${room.players} players`;
+            roomDiv.onclick = () => joinRoom(key);
+            roomList.appendChild(roomDiv);
+          });
+        } else {
+          roomList.innerHTML = "No rooms available.";
+        }
+      });
+    }
+
+    // Join a room
+    function joinRoom(roomId) {
+      alert(`Joining room: ${roomId}`);
+      // Redirect to overlay or game page
+      window.location.href = `overlay.html?room=${roomId}`;
+    }
+
+    // Initial load
+    loadRooms();
   </script>
 </body>
 </html>
