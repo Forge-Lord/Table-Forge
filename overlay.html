@@ -1,5 +1,4 @@
-<!DOCTYPE html>
-<html>
+<!DOCTYPE html><html>
 <head>
   <title>Table Forge Overlay</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -62,48 +61,30 @@
       border-radius: 10px;
       cursor: pointer;
     }
-    #playerMenu {
-      position: absolute;
-      top: 10px;
-      right: 10px;
-      background: #222;
-      color: white;
-      padding: 10px;
-      border-radius: 8px;
-      font-size: 14px;
-      z-index: 10000;
-    }
-    #chat {
+    #chatArea {
       position: absolute;
       bottom: 10px;
       right: 10px;
-      width: 300px;
-      max-height: 40vh;
-      overflow-y: auto;
-      background: rgba(0,0,0,0.6);
+      width: 250px;
+      background: #111;
       color: white;
-      border-radius: 8px;
-      padding: 8px;
+      padding: 10px;
+      border-radius: 10px;
       font-size: 14px;
-      z-index: 10000;
     }
-    #chat input {
-      width: 100%;
-      padding: 6px;
-      border: none;
-      border-radius: 4px;
-      background: #333;
-      color: white;
-      margin-top: 5px;
-    }
-    .chat-entry {
+    #chatLog {
+      max-height: 100px;
+      overflow-y: auto;
       margin-bottom: 4px;
+    }
+    #chatInput {
+      width: 100%;
+      padding: 4px;
     }
   </style>
 </head>
 <body>
   <button id="startBtn">Start Overlay</button>
-
   <div class="overlay-grid" style="display:none">
     <div class="player-box" id="P1">
       <video autoplay playsinline></video>
@@ -122,34 +103,16 @@
       <div class="ui-overlay"><div class="name">P4</div><div class="life">40</div></div>
     </div>
   </div>
-
-  <div id="playerMenu" style="display:none">
-    <button onclick="toggleCam()">Toggle Cam</button>
-    <button onclick="toggleMic()">Toggle Mic</button>
-    <button onclick="leaveRoom()">Leave</button>
-  </div>
-
-  <div id="chat" style="display:none">
+  <div id="chatArea">
     <div id="chatLog"></div>
-    <input id="chatInput" placeholder="Say something..." />
+    <input id="chatInput" type="text" placeholder="Type a message..." />
   </div>
-
   <script type="module" src="overlay.js"></script>
   <script>
     document.getElementById("startBtn").addEventListener("click", () => {
       document.getElementById("startBtn").style.display = "none";
       document.querySelector(".overlay-grid").style.display = "grid";
-      document.getElementById("playerMenu").style.display = "block";
-      document.getElementById("chat").style.display = "block";
       window.startOverlay();
-    });
-
-    document.getElementById("chatInput").addEventListener("keydown", (e) => {
-      if (e.key === "Enter") {
-        const val = e.target.value.trim();
-        if (val) window.sendChat(val);
-        e.target.value = "";
-      }
     });
   </script>
 </body>
