@@ -1,5 +1,4 @@
-<!DOCTYPE html>
-<html>
+<!DOCTYPE html><html>
 <head>
   <title>Table Forge Overlay</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -62,35 +61,10 @@
       border-radius: 10px;
       cursor: pointer;
     }
-    #chatBox {
-      position: absolute;
-      bottom: 0;
-      right: 0;
-      width: 300px;
-      max-height: 35%;
-      background: rgba(0, 0, 0, 0.7);
-      color: white;
-      font-size: 14px;
-      padding: 6px;
-      border-radius: 10px 0 0 0;
-      overflow-y: auto;
-    }
-    #chatInput {
-      width: 100%;
-      box-sizing: border-box;
-      font-size: 14px;
-      margin-top: 6px;
-      padding: 6px;
-      background: #111;
-      color: white;
-      border: none;
-      border-radius: 4px;
-    }
   </style>
 </head>
 <body>
   <button id="startBtn">Start Overlay</button>
-
   <div class="overlay-grid" style="display:none">
     <div class="player-box" id="P1">
       <video autoplay playsinline></video>
@@ -108,21 +82,11 @@
       <video autoplay playsinline></video>
       <div class="ui-overlay"><div class="name">P4</div><div class="life">40</div></div>
     </div>
-  </div>
-
-  <div id="chatBox" style="display:none">
-    <div id="chatLog"></div>
-    <input type="text" id="chatInput" placeholder="Type message and press Enter..." />
-  </div>
-
-  <script type="module" src="overlay.js"></script>
-  <script>
+  </div>  <!-- Static fallback script for SimplePeer -->  <script src="https://unpkg.com/simple-peer@9.11.1/simplepeer.min.js"></script>  <!-- Overlay JS -->  <script type="module" src="overlay.js"></script>  <script>
     document.getElementById("startBtn").addEventListener("click", () => {
       document.getElementById("startBtn").style.display = "none";
       document.querySelector(".overlay-grid").style.display = "grid";
-      document.getElementById("chatBox").style.display = "block";
-      window.startOverlay?.();
+      window.startOverlay();
     });
-  </script>
-</body>
+  </script></body>
 </html>
