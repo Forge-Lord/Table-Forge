@@ -1,190 +1,81 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-app.js";
-import { getDatabase, ref, get, onChildAdded, onDisconnect, push, set, onValue } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-database.js";
-import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-auth.js";
+import { getDatabase, ref, onChildAdded, push, set } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-database.js";
 import SimplePeer from "https://cdn.skypack.dev/simple-peer?min";
 
+// Firebase configuration
 const firebaseConfig = {
   apiKey: "AIzaSyBzvVpMCdg3Y6i5vCGWarorcTmzBzjmPow",
   authDomain: "tableforge-app.firebaseapp.com",
   databaseURL: "https://tableforge-app-default-rtdb.firebaseio.com",
   projectId: "tableforge-app",
-  appId: "1:708497363618:web:39da060b48681944923dfb"
+  appId: "1:708497363618:web:39da060b48681944923dfb",
 };
 
 const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
-const auth = getAuth(app);
 
 const params = new URLSearchParams(window.location.search);
 const roomCode = params.get("room");
-const mySeat = localStorage.getItem("mySeat");
-
-let selectedCamera = localStorage.getItem("selectedCamera") || "";
-let selectedMic = localStorage.getItem("selectedMic") || "";
 let localStream;
 let peers = {};
-let currentName = "";
 
-function configureLayout(playerCount) {
-  const grid = document.querySelector(".overlay-grid");
-  if (!grid) return;
-  const seats = ["P1", "P2", "P3", "P4"];
-  grid.style.gridTemplateRows = playerCount === 2 ? "1fr 1fr" : "1fr 1fr";
-  grid.style.gridTemplateColumns = playerCount === 2 ? "1fr" : "1fr 1fr";
-
-  seats.forEach((seat, index) => {
-    const el = document.getElementById(seat);
-    if (!el) return;
-    el.style.display = index < playerCount ? "block" : "none";
-  });
-}
-
-function updateNames(players) {
-  for (const seat in players) {
-    const box = document.getElementById(seat);
-    if (box) {
-      const label = box.querySelector(".name");
-      if (label) label.textContent = players[seat].name || seat;
-    }
-  }
-}
-
-async function startPreviewCompatibleCamera() {
+// Initialize local media stream
+async function setupLocalStream() {
   try {
-    const devices = await navigator.mediaDevices.enumerateDevices();
-    const cams = devices.filter(d => d.kind === "videoinput");
-    const mics = devices.filter(d => d.kind === "audioinput");
-    if (!selectedCamera && cams.length) selectedCamera = cams[0].deviceId;
-    if (!selectedMic && mics.length) selectedMic = mics[0].deviceId;
-
     const stream = await navigator.mediaDevices.getUserMedia({
-      video: selectedCamera ? { deviceId: { exact: selectedCamera } } : true,
-      audio: selectedMic ? { deviceId: { exact: selectedMic } } : true
+      video: true,
+      audio: true,
     });
     localStream = stream;
-    return true;
+    attachStreamToElement("P1", localStream, true); // Attach local stream to P1
   } catch (err) {
-    console.error("Media access failed:", err);
-    return false;
+    console.error("Failed to get local media:", err);
   }
 }
 
-function attachMyStream(seat, name) {
+// Attach a stream to a player element
+function attachStreamToElement(seat, stream, muted = false) {
   const box = document.getElementById(seat);
-  if (!box) return;
-  const vid = box.querySelector("video");
-  if (vid && localStream) {
-    vid.srcObject = localStream;
-    vid.muted = true;
-    vid.play().catch(err => console.warn("play() failed:", err));
-  }
-  const label = box.querySelector(".name");
-  if (label) label.textContent = name;
-}
-
-function setupPeerSync(players) {
-  const myRef = ref(db, `signals/${roomCode}/${mySeat}`);
-  const myId = push(myRef).key;
-  onDisconnect(ref(db, `signals/${roomCode}/${mySeat}/${myId}`)).remove();
-
-  for (const seat in players) {
-    if (seat !== mySeat && players[seat]?.name) {
-      if (!peers[seat]) createPeer(seat, true);
-    }
-  }
-
-  for (const seat in players) {
-    if (seat === mySeat) continue;
-    const seatRef = ref(db, `signals/${roomCode}/${seat}`);
-    onChildAdded(seatRef, (sigSnap) => {
-      const val = sigSnap.val();
-      if (!val || !val.signal || val.from === mySeat) return;
-      if (!peers[seat]) createPeer(seat, false);
-      peers[seat].signal(val.signal);
-    });
+  const video = box.querySelector("video");
+  if (video) {
+    video.srcObject = stream;
+    video.muted = muted;
+    video.play().catch((err) => console.warn("Video play failed:", err));
   }
 }
 
-function createPeer(targetSeat, initiator) {
-  try {
+// Setup peer signaling
+function setupSignaling() {
+  const signalingRef = ref(db, `rooms/${roomCode}/signals`);
+
+  onChildAdded(signalingRef, (snapshot) => {
+    const data = snapshot.val();
+    if (data.from === "P1") return; // Ignore our own signals
+
     const peer = new SimplePeer({
-      initiator,
-      trickle: false,
-      stream: localStream
+      initiator: data.initiator || false,
+      stream: localStream,
     });
 
-    peer.on("signal", (data) => {
-      push(ref(db, `signals/${roomCode}/${targetSeat}`), {
-        from: mySeat,
-        signal: data
-      });
+    peers[data.from] = peer;
+
+    peer.on("signal", (signal) => {
+      push(signalingRef, { from: "P1", to: data.from, signal });
     });
 
     peer.on("stream", (stream) => {
-      const box = document.getElementById(targetSeat);
-      if (!box) return;
-      const vid = box.querySelector("video");
-      if (vid) {
-        vid.srcObject = stream;
-        vid.play().catch(err => console.warn("Remote play failed:", err));
-      }
+      attachStreamToElement(data.from, stream); // Attach remote stream
     });
 
-    peer.on("error", err => console.error(`Peer error (${targetSeat}):`, err));
-
-    peers[targetSeat] = peer;
-  } catch (err) {
-    console.error(`Failed to create peer for ${targetSeat}:`, err);
-  }
-}
-
-function setupChat() {
-  const chatBox = document.getElementById("chatBox");
-  const chatInput = document.getElementById("chatInput");
-  const chatSend = document.getElementById("chatSend");
-  const chatRef = ref(db, `chats/${roomCode}`);
-
-  chatSend.onclick = () => {
-    const msg = chatInput.value.trim();
-    if (!msg) return;
-    const entry = { name: currentName || mySeat, message: msg, time: Date.now() };
-    push(chatRef, entry);
-    chatInput.value = "";
-  };
-
-  onChildAdded(chatRef, (snap) => {
-    const msg = snap.val();
-    const div = document.createElement("div");
-    div.textContent = `${msg.name}: ${msg.message}`;
-    chatBox.appendChild(div);
-    chatBox.scrollTop = chatBox.scrollHeight;
+    peer.signal(data.signal);
   });
 }
 
-export async function startOverlay() {
-  onAuthStateChanged(auth, async (user) => {
-    if (!user || !roomCode || !mySeat) {
-      alert("Missing user or room context");
-      return window.location.href = "/profile.html";
-    }
-
-    currentName = localStorage.getItem("displayName") || user.displayName || user.email;
-
-    const snap = await get(ref(db, `rooms/${roomCode}`));
-    const roomData = snap.val();
-    if (!roomData) return alert("Room not found.");
-    const playerCount = roomData.playerCount;
-    const players = roomData.players;
-
-    configureLayout(playerCount);
-    updateNames(players);
-    setupChat();
-
-    const camReady = await startPreviewCompatibleCamera();
-    if (!camReady) return;
-    attachMyStream(mySeat, currentName);
-    setupPeerSync(players);
-  });
+// Start the overlay
+async function startOverlay() {
+  await setupLocalStream();
+  setupSignaling();
+  document.querySelector(".overlay-grid").style.display = "grid";
 }
 
-window.startOverlay = startOverlay;
+document.getElementById("startBtn").addEventListener("click", startOverlay);
