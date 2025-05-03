@@ -1,311 +1,61 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <title>Table Forge Lobby</title>
+  <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Table Forge Lobby</title>
   <style>
     body {
       background: #111;
       color: white;
       font-family: sans-serif;
-      margin: 0;
-      padding-top: 100px;
       text-align: center;
+      padding-top: 50px;
     }
     input, select, button {
-      font-size: 16px;
+      font-size: 1rem;
       padding: 10px;
-      margin: 6px;
-      width: 260px;
-      max-width: 90%;
-      border-radius: 6px;
+      margin: 8px;
+      width: 90%;
+      max-width: 300px;
       background: #222;
       color: white;
       border: none;
+      border-radius: 6px;
     }
     button:hover {
       background: #444;
-    }
-    .room-entry {
-      border: 1px solid #555;
-      border-radius: 6px;
-      padding: 10px;
-      margin: 8px auto;
-      width: 300px;
-      background: #222;
     }
     video {
       margin-top: 10px;
       max-width: 100%;
       border-radius: 10px;
-      border: 2px solid #555;
-    }
-    #playerList {
-      margin-top: 1em;
-    }
-    .player-entry {
-      padding: 4px;
-      font-size: 14px;
-    }
-    #rejoinBtn {
-      display: none;
-      margin-bottom: 20px;
     }
   </style>
 </head>
 <body>
-  <h2>Create or Join a Room</h2>
-  <button id="rejoinBtn" onclick="rejoinRoom()">Rejoin Last Room</button>
-
-  <div id="createForm">
-    <h3>Create Room</h3>
-    <input id="roomName" placeholder="Room Name (Optional)"><br>
+  <h1>Create or Join a Room</h1>
+  <div>
     <label>Game:</label>
-    <select id="template">
-      <option value="commander">Commander</option>
+    <select id="gameSelector">
       <option value="yugioh">Yu-Gi-Oh!</option>
       <option value="digimon">Digimon</option>
-    </select><br>
+      <option value="lorcana">Lorcana</option>
+    </select>
     <label>Players:</label>
     <select id="playerCount">
       <option value="2">2</option>
       <option value="3">3</option>
       <option value="4">4</option>
-    </select><br>
+    </select>
     <button onclick="createRoom()">Create Room</button>
   </div>
-
-  <h3>Available Rooms</h3>
-  <div id="roomList">Loading...</div>
-
-  <div id="lobbyView" style="display: none;">
-    <h3>Lobby Room: <span id="roomDisplay"></span></h3>
-    <label>Camera:
-      <select id="videoInput"></select>
-    </label><br>
-    <label>Microphone:
-      <select id="audioInput"></select>
-    </label><br>
-    <button onclick="startPreview()">Save + Preview</button><br>
-    <video id="camPreview" autoplay muted playsinline></video>
-    <div id="playerList"></div>
-    <button id="startGameBtn" style="margin-top: 20px; display: none;" onclick="startGame()">Start Game</button>
-  </div>
-
-  <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-app.js";
-    import { getDatabase, ref, set, onValue, get, update } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-database.js";
-    import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-auth.js";
-    import { renderNav } from './nav.js'; renderNav();
-
-    const firebaseConfig = {
-      apiKey: "AIzaSyBzvVpMCdg3Y6i5vCGWarorcTmzBzjmPow",
-      authDomain: "tableforge-app.firebaseapp.com",
-      databaseURL: "https://tableforge-app-default-rtdb.firebaseio.com",
-      projectId: "tableforge-app",
-      appId: "1:708497363618:web:39da060b48681944923dfb"
-    };
-
-    const app = initializeApp(firebaseConfig);
-    const db = getDatabase(app);
-    const auth = getAuth(app);
-
-    let currentUser = null;
-    let currentRoom = null;
-    let isHost = false;
-    let displayName = "";
-
-    const roomList = document.getElementById("roomList");
-    const playerList = document.getElementById("playerList");
-
-    onAuthStateChanged(auth, (user) => {
-      if (!user) return window.location.href = "/profile.html";
-      currentUser = user;
-      displayName = localStorage.getItem("displayName") || user.displayName || user.email;
-      loadRooms();
-    });
-
-    async function loadRooms() {
-      const roomsRef = ref(db, "rooms");
-      onValue(roomsRef, (snapshot) => {
-        roomList.innerHTML = "";
-        snapshot.forEach((child) => {
-          const room = child.val();
-          const roomId = child.key;
-          const isExpired = Date.now() - (room.createdAt || 0) > 12 * 60 * 60 * 1000;
-          if (room.started || isExpired) return;
-
-          const div = document.createElement("div");
-          div.className = "room-entry";
-          div.innerHTML = `
-            <b>${roomId}</b><br>
-            Host: ${room.host}<br>
-            Game: ${room.template}<br>
-            Players: ${room.playerCount}<br>
-            <button onclick="joinRoom('${roomId}')">Join</button>
-          `;
-          roomList.appendChild(div);
-        });
-      });
-
-      // Show rejoin button if room code exists
-      if (localStorage.getItem("roomCode")) {
-        document.getElementById("rejoinBtn").style.display = "inline-block";
-      }
-    }
-
-    window.createRoom = async function () {
-      const name = document.getElementById("roomName").value || randomName();
-      const template = document.getElementById("template").value;
-      const playerCount = parseInt(document.getElementById("playerCount").value);
-      const roomCode = `room-${name.replace(/\s+/g, '-').toLowerCase()}`;
-
-      const players = {};
-      for (let i = 1; i <= playerCount; i++) {
-        players[`P${i}`] = i === 1 ? { name: displayName, life: 40, status: "" } : {};
-      }
-
-      await set(ref(db, `rooms/${roomCode}`), {
-        host: displayName,
-        template,
-        playerCount,
-        started: false,
-        createdAt: Date.now(),
-        players
-      });
-
-      isHost = true;
-      currentRoom = roomCode;
-      localStorage.setItem("mySeat", "P1");
-      localStorage.setItem("roomCode", roomCode);
-      enterLobby(roomCode);
-    };
-
-    window.joinRoom = async function (code) {
-      const snap = await get(ref(db, `rooms/${code}`));
-      if (!snap.exists()) return alert("Room not found.");
-      const data = snap.val();
-
-      for (let i = 1; i <= data.playerCount; i++) {
-        const slot = `P${i}`;
-        if (data.players[slot]?.name === displayName) {
-          return alert("You're already in this room.");
-        }
-      }
-
-      let seat = null;
-      for (let i = 1; i <= data.playerCount; i++) {
-        const slot = `P${i}`;
-        if (!data.players[slot]?.name) {
-          seat = slot;
-          break;
-        }
-      }
-      if (!seat) return alert("Room full.");
-
-      await update(ref(db), {
-        [`rooms/${code}/players/${seat}`]: {
-          name: displayName,
-          life: 40,
-          status: ""
-        }
-      });
-
-      isHost = data.host === displayName;
-      currentRoom = code;
-      localStorage.setItem("mySeat", seat);
-      localStorage.setItem("roomCode", code);
-      enterLobby(code);
-    };
-
-    function enterLobby(code) {
-      document.getElementById("createForm").style.display = "none";
-      roomList.style.display = "none";
-      document.getElementById("lobbyView").style.display = "block";
-      document.getElementById("roomDisplay").textContent = code;
-      if (isHost) document.getElementById("startGameBtn").style.display = "inline-block";
-
-      populateDevices();
-
-      onValue(ref(db, `rooms/${code}/players`), (snap) => {
-        playerList.innerHTML = "";
-        snap.forEach((child) => {
-          const p = child.val();
-          if (p.name) {
-            const div = document.createElement("div");
-            div.className = "player-entry";
-            div.textContent = `${child.key}: ${p.name}`;
-            playerList.appendChild(div);
-          }
-        });
-      });
-
-      onValue(ref(db, `rooms/${code}/started`), (snap) => {
-        if (snap.val() === true) {
-          window.location.href = `/overlay.html?room=${code}`;
-        }
-      });
-    }
-
-    window.startGame = function () {
-      update(ref(db, `rooms/${currentRoom}`), { started: true });
-    };
-
-    async function populateDevices() {
-      try {
-        await navigator.mediaDevices.getUserMedia({ audio: true, video: true });
-      } catch (err) {
-        console.warn("⚠️ Permission issue:", err);
-        return;
-      }
-
-      const devices = await navigator.mediaDevices.enumerateDevices();
-      const videoSelect = document.getElementById("videoInput");
-      const audioSelect = document.getElementById("audioInput");
-      videoSelect.innerHTML = ""; audioSelect.innerHTML = "";
-
-      devices.forEach((d) => {
-        const opt = document.createElement("option");
-        opt.value = d.deviceId;
-        opt.text = d.label || d.kind;
-        if (d.kind === "videoinput") videoSelect.appendChild(opt);
-        else if (d.kind === "audioinput") audioSelect.appendChild(opt);
-      });
-
-      const savedCam = localStorage.getItem("selectedCamera");
-      const savedMic = localStorage.getItem("selectedMic");
-      if (savedCam) videoSelect.value = savedCam;
-      if (savedMic) audioSelect.value = savedMic;
-    }
-
-    window.startPreview = async function () {
-      const cam = document.getElementById("videoInput").value;
-      const mic = document.getElementById("audioInput").value;
-      localStorage.setItem("selectedCamera", cam);
-      localStorage.setItem("selectedMic", mic);
-
-      const stream = await navigator.mediaDevices.getUserMedia({
-        video: { deviceId: { exact: cam } },
-        audio: { deviceId: { exact: mic } }
-      });
-
-      const video = document.getElementById("camPreview");
-      video.srcObject = stream;
-      video.play();
-    };
-
-    function randomName() {
-      const adj = ["blazing", "twilight", "hidden", "ember"];
-      const noun = ["vault", "spire", "forge", "golem"];
-      return `${adj[Math.floor(Math.random() * adj.length)]}-${noun[Math.floor(Math.random() * noun.length)]}-${Math.floor(Math.random() * 900 + 100)}`;
-    }
-  </script>
-
+  <video id="preview" autoplay muted playsinline></video>
   <script>
-    function rejoinRoom() {
-      const lastRoom = localStorage.getItem("roomCode");
-      if (!lastRoom) return alert("No recent room code found.");
-      window.location.href = `/overlay.html?room=${lastRoom}`;
+    async function createRoom() {
+      const game = document.getElementById("gameSelector").value;
+      const players = document.getElementById("playerCount").value;
+      alert(`Creating room for ${game} with ${players} players`);
     }
   </script>
 </body>
